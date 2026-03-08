@@ -1,0 +1,6 @@
+interface:
+  display_name: "Salesforce Commerce Catalog Builder"
+  short_description: "Scrape stores into B2C/B2B import files"
+  default_prompt: "Use $salesforce-commerce-catalog-builder to add a storefront scraper that exports validated Salesforce B2C and B2B catalog files plus a visual HTML preview."
+policy:
+  allow_implicit_invocation: true

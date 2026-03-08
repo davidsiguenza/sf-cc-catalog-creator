@@ -1,0 +1,19 @@
+{
+  "name": "catalogo-productos-scraper",
+  "version": "0.1.0",
+  "description": "CLI para extraer productos de tiendas y exportarlos a formatos base, Salesforce B2C Commerce y Salesforce B2B Commerce.",
+  "type": "module",
+  "bin": {
+    "catalog-scraper": "./src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "playwright": "^1.49.1"
+  }
+}
