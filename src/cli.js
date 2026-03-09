@@ -131,14 +131,6 @@ async function runScrapeCommand(parsed) {
     const answers = await promptForAssistanceInputs(assistance, options);
 
     if (!answers) {
-      const autoScrapeAnswers = await promptForAutoScrapeAfterProfile(result, options);
-
-      if (autoScrapeAnswers) {
-        const scrapeParsed = applyAutoScrapeAnswersToParsed(workingParsed, autoScrapeAnswers);
-        console.log("\nLanzando scrape automatico con el perfil generado...");
-        await runScrapeCommand(scrapeParsed);
-      }
-
       return;
     }
 
@@ -186,6 +178,14 @@ async function runProfileSiteCommand(parsed) {
     const answers = await promptForAssistanceInputs(assistance, options);
 
     if (!answers) {
+      const autoScrapeAnswers = await promptForAutoScrapeAfterProfile(result, options);
+
+      if (autoScrapeAnswers) {
+        const scrapeParsed = applyAutoScrapeAnswersToParsed(workingParsed, autoScrapeAnswers);
+        console.log("\nLanzando scrape automatico con el perfil generado...");
+        await runScrapeCommand(scrapeParsed);
+      }
+
       return;
     }
 
@@ -197,7 +197,7 @@ async function runProfileSiteCommand(parsed) {
   console.log("\nSe alcanzo el maximo de reintentos asistidos para profile-site.");
 }
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const parsed = {
     command: argv[0] || "help",
     help: false,
@@ -319,6 +319,8 @@ function parseArgs(argv) {
         if (token.startsWith("--")) {
           throw new Error(`Parametro no soportado: ${token}`);
         }
+
+        throw new Error(`Argumento inesperado: ${token}`);
     }
   }
 
@@ -348,10 +350,10 @@ Opciones principales:
   --config <path>                    Configuracion JSON por tienda
   --category <nombre>                Categoria concreta por nombre (repetible)
   --category-url <url>               Categoria concreta por URL (repetible)
-  --home-url <url>                   URL de home para profile-site
-  --plp-url <url>                    URL de PLP para profile-site
-  --search-url <url>                 URL de resultados de busqueda para profile-site
-  --pdp-url <url>                    URL de PDP para profile-site
+  --home-url <url>                   URL de home de muestra para profile-site
+  --plp-url <url>                    URL de una PLP de muestra para profile-site
+  --search-url <url>                 URL de resultados de busqueda de muestra para profile-site
+  --pdp-url <url>                    URL de una PDP de muestra para profile-site
   --products-per-category <n>        Productos maximos por categoria
   --max-categories <n>               Categorias top a rastrear en modo automatico
   --max-subcategories <n>            Subcategorias maximas por categoria

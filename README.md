@@ -262,6 +262,8 @@ The helper URLs are optional, but very useful:
 - `--search-url`
 - `--pdp-url`
 
+For `profile-site`, each of those flags accepts a single sample URL. If you need to broaden the catalog with several PLPs, that happens later in the assisted `scrape` flow, not by passing multiple `--plp-url` values in the same command.
+
 If you do not know those URLs yet, you can start with:
 
 ```bash
