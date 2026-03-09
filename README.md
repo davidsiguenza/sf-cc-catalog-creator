@@ -23,6 +23,21 @@ Este proyecto debe documentarse y usarse con una regla simple:
 
 Por eso, abajo veras siempre pasos completos y comandos literales.
 
+## Regla importante sobre `npm init -y`
+
+No asumas que siempre hay que ejecutar `npm init -y`.
+
+Depende del punto de partida:
+
+- si clonas este repo, no ejecutes `npm init -y`
+- si copias la plantilla standalone del skill, no ejecutes `npm init -y`
+- si empiezas en una carpeta vacia y vas a crear un proyecto Node manualmente desde cero, entonces si: ejecuta `npm init -y`
+
+Regla practica:
+
+- si ya existe `package.json`, no hagas `npm init -y`
+- si no existe `package.json`, crea el proyecto Node primero
+
 ## Lo importante: hay 2 piezas distintas
 
 ### 1. Este repo
@@ -93,6 +108,13 @@ git clone https://github.com/davidsiguenza/sf-cc-catalog-creator.git
 cd sf-cc-catalog-creator
 ```
 
+Despues de hacer `git clone`, este repo ya trae `package.json`.
+
+Eso significa:
+
+- no necesitas `npm init -y`
+- puedes pasar directamente a `npm install`
+
 ### 2. Comprobar prerequisitos
 
 Antes de seguir, comprueba que tienes `Node.js` y `npm`:
@@ -115,6 +137,85 @@ Desde la raiz del repo, ejecuta:
 
 ```bash
 npm install
+```
+
+No ejecutes antes `npm init -y` aqui, porque este repo ya esta inicializado como proyecto Node.
+
+### Error tipico: `npm install` falla con `ENOENT package.json`
+
+Si ves algo como esto:
+
+```text
+npm error enoent Could not read package.json
+```
+
+significa una de estas dos cosas:
+
+1. no estas dentro del repo clonado
+2. estas en una carpeta vacia que todavia no es un proyecto Node
+
+Ejemplo de caso incorrecto:
+
+```bash
+cd test-catalog
+npm install
+```
+
+Eso falla si `test-catalog/` no contiene `package.json`.
+
+La correccion depende del caso:
+
+Caso A: quieres usar este repo
+
+```bash
+git clone https://github.com/davidsiguenza/sf-cc-catalog-creator.git
+cd sf-cc-catalog-creator
+npm install
+npx playwright install chromium
+```
+
+Caso B: quieres crear un proyecto Node vacio manualmente
+
+```bash
+mkdir test-catalog
+cd test-catalog
+npm init -y
+```
+
+Pero ojo: despues de `npm init -y`, tu proyecto sigue vacio. Aun no tiene `playwright` ni el scraper.
+
+Si haces:
+
+```bash
+npm install
+```
+
+sin dependencias declaradas, `npm` no instalara nada util para este caso.
+
+### Error tipico: `npx playwright install chromium` avisa que faltan dependencias
+
+Si ves el warning de Playwright diciendo que primero debes instalar dependencias del proyecto, el significado es:
+
+- tu `package.json` existe
+- pero tu proyecto no tiene `playwright` instalado
+
+Eso es exactamente lo que pasa si hiciste `npm init -y` en una carpeta vacia y luego `npm install` sin instalar ninguna dependencia.
+
+Si estas creando un proyecto manual desde cero, el orden minimo seria:
+
+```bash
+npm init -y
+npm install playwright
+npx playwright install chromium
+```
+
+Si quieres usar este scraper, no hagas ese camino. Haz este:
+
+```bash
+git clone https://github.com/davidsiguenza/sf-cc-catalog-creator.git
+cd sf-cc-catalog-creator
+npm install
+npx playwright install chromium
 ```
 
 ### 4. Instalar Chromium para Playwright
@@ -358,6 +459,27 @@ Punto importante:
 - el skill ayuda a recrear o adaptar este repo
 - si solo quieres ejecutar el scraper ya existente, no uses el skill: clona este repo y usa el CLI
 
+### Caso especial: carpeta vacia sin proyecto Node
+
+Si no estas clonando este repo y tampoco estas copiando la plantilla standalone, y quieres montar algo manualmente desde una carpeta vacia, el orden minimo seria:
+
+```bash
+mkdir mi-scraper
+cd mi-scraper
+npm init -y
+npm install playwright
+npx playwright install chromium
+```
+
+Pero para este proyecto en concreto, el camino recomendado sigue siendo:
+
+```bash
+git clone https://github.com/davidsiguenza/sf-cc-catalog-creator.git
+cd sf-cc-catalog-creator
+npm install
+npx playwright install chromium
+```
+
 ## Que outputs genera
 
 ### Genericos
@@ -446,14 +568,15 @@ Si alguien tiene que usar esto sin contexto previo, esta es la lista minima:
 
 1. Ejecuta `git clone https://github.com/davidsiguenza/sf-cc-catalog-creator.git`
 2. Ejecuta `cd sf-cc-catalog-creator`
-3. Ejecuta `node -v` y confirma `>= 20`
-4. Ejecuta `npm install`
-5. Ejecuta `npx playwright install chromium`
-6. Ejecuta `npm start -- profile-site --url <HOME>`
-7. Si el sistema lo pide, aporta `PLP URL` y `PDP URL`
-8. Ejecuta `npm start -- scrape --url <HOME> --formats generic,b2c,b2b`
-9. Revisa `output/<domain>/visual-catalog.html`
-10. Usa `run-summary.json` para confirmar que los productos son válidos
+3. Confirma que ya existe `package.json`
+4. Ejecuta `node -v` y confirma `>= 20`
+5. Ejecuta `npm install`
+6. Ejecuta `npx playwright install chromium`
+7. Ejecuta `npm start -- profile-site --url <HOME>`
+8. Si el sistema lo pide, aporta `PLP URL` y `PDP URL`
+9. Ejecuta `npm start -- scrape --url <HOME> --formats generic,b2c,b2b`
+10. Revisa `output/<domain>/visual-catalog.html`
+11. Usa `run-summary.json` para confirmar que los productos son válidos
 
 ## Decision final
 
