@@ -1,79 +1,79 @@
-# Arquitectura objetivo para catalog scraper
+# Target Architecture For The Catalog Scraper
 
-## Objetivo
+## Goal
 
-Convertir este repo en un motor reusable para:
+Turn this repo into a reusable engine that can:
 
-- explorar una web desconocida con `Playwright`
-- detectar PLPs, PDPs, paginacion y fuentes de datos utiles
-- extraer un modelo canonico de catalogo
-- validar calidad minima del resultado
-- exportar a CSV/HTML generico, Salesforce B2C y Salesforce B2B
+- explore an unknown site with `Playwright`
+- detect PLPs, PDPs, pagination, and useful data sources
+- extract a canonical catalog model
+- validate minimum output quality
+- export to generic CSV/HTML, Salesforce B2C, and Salesforce B2B
 
-La idea clave es separar tres cosas que ahora estan mezcladas:
+The key idea is to separate three concerns that were previously mixed together:
 
-1. exploracion de la web
-2. extraccion y normalizacion
-3. exportacion a formatos Salesforce
+1. site exploration
+2. extraction and normalization
+3. export into Salesforce formats
 
-## Problema actual
+## Current problem
 
-Hoy el repo funciona bien cuando la web encaja con unas pocas heuristicas:
+Today the repo works well when the site fits a small set of heuristics:
 
-- categorias por patrones como `/category/`, `/collections/`, `cgid=`
-- productos por patrones como `/p/`, `/product/`, `pid=`
-- selectores DOM muy concretos
+- categories using patterns such as `/category/`, `/collections/`, `cgid=`
+- products using patterns such as `/p/`, `/product/`, `pid=`
+- very specific DOM selectors
 
-Eso hace que `Playwright` se use solo como navegador, no como motor real de reconocimiento. La parte mas fragil esta acoplada en:
+That means `Playwright` is mostly used as a browser, not as a recognition engine. The most fragile logic used to be coupled inside:
 
 - `src/config.js`
 - `src/storefront.js`
 - `src/scraper.js`
 
-La consecuencia es que cada nueva tienda exige tocar regex, selectores o ramas condicionales.
+The result is that each new site can force new regexes, selectors, or special-case branches.
 
-## Principio de diseño
+## Design principle
 
-No intentar un "scraper universal" basado en regex fijas.
+Do not try to build a “universal scraper” by endlessly adding more fixed regexes.
 
-La arquitectura debe ser:
+The architecture should instead be:
 
-- `Playwright` para reconocimiento y obtencion
-- modelo canonico intermedio para producto/categoria
-- exportadores deterministas para B2C y B2B
-- perfiles por sitio para persistir lo aprendido
-- estrategias por plataforma cuando existan patrones repetibles
-- ayuda progresiva al usuario cuando el modo automatico no llegue a una calidad minima
+- `Playwright` for recognition and acquisition
+- a canonical intermediate model for product/category data
+- deterministic exporters for B2C and B2B
+- per-site profiles that persist what the system learned
+- platform strategies when repeatable patterns exist
+- progressive user help when fully automatic discovery does not reach minimum quality
 
-## Flujo objetivo
+## Target flow
 
 ```text
-URL inicial
-  -> exploracion del sitio con Playwright
-  -> clasificacion de paginas (home, PLP, PDP, search, cart)
-  -> deteccion de fuente de datos (json-ld, DOM, API/XHR, hydration data)
-  -> extraccion a modelo canonico
-  -> validacion de calidad
-  -> si falta contexto, solicitar una PLP/PDP al usuario
-  -> guardado de site-profile
-  -> exportadores (generic CSV, HTML, B2C XML, B2B CSV)
+Entry URL
+  -> site exploration with Playwright
+  -> page classification (home, PLP, PDP, search, cart)
+  -> data source detection (JSON-LD, DOM, API/XHR, hydration data)
+  -> extraction into canonical model
+  -> quality validation
+  -> if context is missing, ask the user for a PLP/PDP
+  -> persist a site profile
+  -> exporters (generic CSV, HTML, B2C XML, B2B CSV)
 ```
 
-## Escalado de ayuda
+## Progressive assistance
 
-El sistema debe intentar primero el modo `100% auto`.
+The system should always try `100% automatic` mode first.
 
-Si no encuentra PLPs, no llega a PDPs o la calidad del resultado cae por debajo del umbral minimo, debe devolver una peticion de ayuda concreta en vez de fallar de forma opaca.
+If it cannot find PLPs, cannot reach PDPs, or the output quality drops below the minimum threshold, it should return a concrete request for help instead of failing opaquely.
 
-Ejemplos:
+Examples:
 
-- si no encuentra PLPs, pedir una `PLP URL`
-- si encuentra PLP pero no producto fiable, pedir una `PDP URL`
-- si el perfil sigue siendo ambiguo, pedir opcionalmente una `Search URL`
+- if it cannot find PLPs, request a `PLP URL`
+- if it finds a PLP but not reliable product data, request a `PDP URL`
+- if the profile is still ambiguous, optionally request a `Search URL`
 
-La ayuda debe ser minima y util: solo pedir el contexto que desbloquea el siguiente intento.
+The help should be minimal and useful: ask only for the input that unlocks the next attempt.
 
-## Estructura propuesta
+## Proposed structure
 
 ```text
 src/
@@ -157,95 +157,95 @@ docs/
   target-architecture.md
 ```
 
-## Responsabilidad de cada capa
+## Layer responsibilities
 
 ### `cli/`
 
-Comandos publicos del proyecto.
+Public commands for the project.
 
-- `scrape`: ejecuta extraccion completa usando perfil existente o modo generico
-- `profile-site`: explora una web nueva y propone/genera un perfil
-- `validate-profile`: comprueba si un perfil sigue siendo valido
+- `scrape`: run a full extraction using an existing profile or generic mode
+- `profile-site`: explore a new site and propose or generate a profile
+- `validate-profile`: check whether an existing profile is still valid
 
-`profile-site` deberia aceptar URLs de apoyo opcionales cuando el usuario las tenga:
+`profile-site` should accept optional helper URLs when the user has them:
 
 - `--home-url`
 - `--plp-url`
 - `--search-url`
 - `--pdp-url`
 
-Esto tiene mucho sentido porque reduce exploracion ciega y mejora la deteccion inicial de patrones.
+That matters because it reduces blind exploration and improves first-pass pattern detection.
 
 ### `browser/`
 
-Encapsula `Playwright`.
+Encapsulates `Playwright`.
 
-- creacion de navegador/contexto/paginas
-- navegacion robusta
-- captura de requests/responses
-- snapshots utiles para depuracion
+- browser/context/page creation
+- robust navigation
+- request/response capture
+- useful snapshots for debugging
 
-Esta capa no decide si una pagina es PLP o PDP. Solo da primitives estables.
+This layer should not decide whether a page is a PLP or PDP. It should only expose stable primitives.
 
 ### `discovery/`
 
-Reconocimiento del sitio.
+Site recognition.
 
-- encontrar links relevantes
-- clasificar paginas
-- puntuar URLs candidatas
-- detectar paginacion
-- elegir muestras de PLP/PDP para analisis
+- find relevant links
+- classify pages
+- score candidate URLs
+- detect pagination
+- choose PLP/PDP samples for analysis
 
-Aqui debe vivir la logica de "esto parece una categoria" o "esto parece un producto", pero basada en score, no en un `if` binario.
+This is where logic like “this looks like a category” or “this looks like a product” should live, but based on scoring rather than binary `if` statements.
 
 ### `extraction/`
 
-Construye el modelo canonico.
+Builds the canonical model.
 
-Orden recomendado de fuentes:
+Recommended source order:
 
 1. JSON-LD / microdata
-2. datos de red o hydration data
-3. DOM visible
+2. network or hydration data
+3. visible DOM
 
-Cada extractor devuelve estructura parcial y una confianza. El pipeline fusiona resultados.
+Each extractor should return a partial structure plus a confidence score. The pipeline merges them.
 
 ### `platforms/`
 
-Estrategias especiales para plataformas conocidas.
+Special handling for known storefront families.
 
-Ejemplos:
+Examples:
 
 - Shopify
 - SFCC
 - Magento
-- ASP.NET legacy tipo `-C2.aspx` y `-P1532.aspx`
+- legacy ASP.NET stores such as `-C2.aspx` and `-P1532.aspx`
 
-No deben reescribir todo el motor. Solo ajustar discovery y extraction cuando una plataforma tiene señales claras.
+These strategies should not rewrite the whole engine. They should only adjust discovery and extraction when the platform has clear signals.
 
 ### `site-profiles/`
 
-Memoria persistente por dominio.
+Persistent memory per domain.
 
-Aqui se guarda lo aprendido en la primera exploracion de una web.
+This is where the system stores what it learned during the first exploration of a site.
 
-Ejemplos de contenido:
+Examples of stored content:
 
-- patrones de URLs de categoria y producto
-- selectores PLP/PDP
-- estrategia preferida para precio, imagenes y descripcion
-- hints de paginacion
-- plataforma detectada
-- nivel de confianza
+- category and product URL patterns
+- PLP/PDP selectors
+- preferred strategies for price, images, and description
+- pagination hints
+- detected platform
+- confidence level
 
 ### `core/`
 
-Contrato interno del sistema.
+Internal contract of the system.
 
-Este es el centro estable del repo. Todo lo extraido debe terminar aqui antes de exportarse.
+This is the stable center of the repo. Everything extracted should flow through this layer before export.
 
-## Modelo canonico minimo
+## Minimum canonical model
 
 ```js
 {
@@ -258,8 +258,9 @@ Este es el centro estable del repo. Todo lo extraido debe terminar aqui antes de
   currency: "",
   imageUrls: [],
   productUrl: "",
-  categoryTrail: [],
   categoryPath: "",
+  categoryTrail: [],
+  allCategoryPaths: [],
   sourceSite: "",
   sourceType: "",
   sourceConfidence: 0,
@@ -271,227 +272,47 @@ Este es el centro estable del repo. Todo lo extraido debe terminar aqui antes de
 }
 ```
 
-Campos opcionales que conviene preparar aunque B2B/B2C no los usen siempre:
+This model is the source of truth. B2C and B2B exports should be generated from here, not directly from raw scraping output.
 
-- `variants`
-- `inventory`
-- `gtin`
-- `mpn`
-- `attributes`
-- `breadcrumbs`
+## What belongs in the skill vs the repo
 
-## Formato de `site-profile`
+This distinction matters.
 
-Ejemplo:
+### The repo should contain
 
-```json
-{
-  "domain": "eu.salesforcestore.com",
-  "platformHint": "legacy-aspnet-store",
-  "entryUrl": "https://eu.salesforcestore.com/",
-  "urlPatterns": {
-    "category": ["-C\\d+\\.aspx$"],
-    "product": ["-P\\d+\\.aspx$"]
-  },
-  "selectors": {
-    "plpProductLinks": [
-      ".productItemDisplay a[href]"
-    ],
-    "pdpName": [
-      "h1",
-      ".itemName"
-    ],
-    "pdpPrice": [
-      ".price",
-      "[itemprop='price']"
-    ],
-    "pdpDescription": [
-      ".product-description",
-      "[itemprop='description']"
-    ]
-  },
-  "pagination": {
-    "nextSelectors": [
-      "a[rel='next']",
-      ".next a[href]"
-    ]
-  },
-  "preferredSources": [
-    "dom"
-  ],
-  "confidence": 0.82
-}
-```
+- the runtime CLI
+- extraction and normalization logic
+- exporters
+- tests
+- profiles and profile loaders
+- validation
 
-Este perfil no reemplaza el motor. Solo le evita volver a descubrir lo mismo cada vez.
+### The skill should contain
 
-## Que debe hacer el skill
+- the workflow for how an agent should apply the system to a new repo
+- guidance on when to ask for helper URLs
+- guidance on how to bootstrap a standalone version
+- references to the maintained runtime or template
 
-El skill no debe contener toda la inteligencia del scraper. Debe orquestar.
+The skill should orchestrate the process. The stable logic should live in code.
 
-Responsabilidades del skill:
+## Migration direction
 
-- crear o actualizar el proyecto scraper en otro workspace
-- ejecutar `profile-site` contra una web nueva
-- revisar resultados y validaciones
-- persistir o corregir el `site-profile`
-- lanzar `scrape`
-- dejar outputs listos en `output/`
+The current refactor path is:
 
-Responsabilidades del repo:
+1. move normalization and validation into `core/`
+2. separate browser/discovery/extraction concerns
+3. add persistent `profiles/`
+4. add `profile-site`
+5. add platform-specific strategies
+6. keep the skill template synchronized with the main runtime
 
-- reconocimiento
-- extraccion
-- normalizacion
-- validacion
-- exportadores
+## Success criteria
 
-En otras palabras:
+The architecture is working when:
 
-- el skill define el flujo de trabajo
-- el repo implementa la logica estable
-
-## Contrato entre skill y motor
-
-El skill deberia poder hacer siempre algo como esto:
-
-```bash
-npm start -- profile-site --url https://example.com
-npm start -- scrape --url https://example.com --formats generic,b2c,b2b
-```
-
-Si el `profile-site` encuentra un perfil valido, lo guarda en `profiles/<dominio>.json`.
-
-Si `scrape` ve un perfil, lo usa.
-
-Si no hay perfil, hace extraccion generica y, si la confianza es baja, devuelve una recomendacion de perfilar primero.
-
-Cuando el usuario pueda aportar ejemplos, el contrato ideal seria:
-
-```bash
-npm start -- profile-site \
-  --url https://example.com \
-  --plp-url https://example.com/category/shoes \
-  --search-url "https://example.com/search?q=shoe" \
-  --pdp-url https://example.com/product/trail-shoe
-```
-
-La home seguiria siendo util, pero PLP, search y PDP aceleran mucho el reconocimiento correcto.
-
-## Migracion incremental desde el estado actual
-
-### Fase 1
-
-Mantener exportadores y crear el centro canonico.
-
-Cambios:
-
-- mover normalizacion de producto a `src/core/normalize/`
-- crear validadores de producto/catalogo
-- hacer que exportadores dependan solo del modelo canonico
-
-Resultado:
-
-- B2C y B2B quedan desacoplados del scraping
-
-### Fase 2
-
-Separar discovery de extraction.
-
-Cambios:
-
-- trocear `src/storefront.js` en `discovery/` y `extraction/`
-- cambiar `looksLikeProductUrl` por `url-scoring`
-- cambiar `isCategoryCandidate` por puntuacion y señales
-
-Resultado:
-
-- deja de haber una sola regex como cuello de botella
-
-### Fase 3
-
-Introducir perfiles por sitio.
-
-Cambios:
-
-- crear `profiles/`
-- loader/merger/schema para perfiles
-- permitir fusionar defaults + perfil + CLI
-
-Resultado:
-
-- una web nueva se adapta sin tocar codigo
-
-### Fase 4
-
-Crear `profile-site`.
-
-Cambios:
-
-- exploracion guiada con `Playwright`
-- toma de muestras de home, 1-2 PLPs y 1-2 PDPs
-- deteccion automatica de patrones de URL, selectores y fuentes
-- escritura de perfil sugerido
-
-Resultado:
-
-- primera ejecucion agentic, siguientes ejecuciones deterministas
-
-### Fase 5
-
-Introducir estrategias de plataforma.
-
-Cambios:
-
-- detector de plataforma
-- estrategias especializadas
-- fallback generico si no se detecta plataforma
-
-Resultado:
-
-- mejor precision en plataformas conocidas
-
-## Primer reparto recomendado de archivos actuales
-
-Estado actual:
-
-- `src/scraper.js`: orquestacion general
-- `src/storefront.js`: discovery + extraction + heuristicas
-- `src/config.js`: defaults de scraping
-- `src/exporters/*`: ya estan bastante bien separados
-
-Movimiento recomendado:
-
-- `src/scraper.js` -> `src/cli/commands/scrape.js` + `src/extraction/pipeline.js`
-- `src/storefront.js` -> `src/discovery/*` + `src/extraction/*`
-- `src/config.js` -> `src/site-profiles/merger.js` + defaults iniciales
-- `src/exporters/*` se mantiene y pasa a depender del modelo canonico
-
-## Criterio operativo
-
-Para una web desconocida, el sistema debe intentar en este orden:
-
-1. plataforma conocida
-2. perfil del dominio
-3. datos estructurados
-4. trafico de red
-5. DOM generico
-
-Y debe fallar con diagnostico, no con silencio.
-
-Ejemplos de diagnostico util:
-
-- "se encontraron PDPs, pero no precio"
-- "se detectaron categorias, pero no links de producto con confianza suficiente"
-- "la web parece ASP.NET legacy; perfil sugerido generado"
-
-## Siguiente paso recomendado
-
-La mejor evolucion inmediata, sin reescribir todo, es esta:
-
-1. extraer el modelo canonico y validadores
-2. introducir `profiles/`
-3. añadir `profile-site`
-4. refactorizar `storefront.js` por capas
-
-Ese orden protege lo que ya funciona hoy y abre la puerta al modelo `skill + motor + perfiles`.
+- most sites succeed with no manual input
+- ambiguous sites ask for a PLP/PDP instead of failing silently
+- a successful run creates reusable site memory
+- B2C and B2B exports are generated from a stable canonical model
+- the skill can reproduce the workflow in another workspace without inventing a different system

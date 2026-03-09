@@ -1,171 +1,171 @@
-# Catalogo de productos
+# Product Catalog Scraper
 
-Motor para explorar una tienda ecommerce, detectar catalogo, extraer productos y exportarlos a:
+Runnable tooling to explore an ecommerce storefront, discover catalog structure, extract products, and export them to:
 
 - `generic-products.csv`
 - `visual-catalog.html`
 - Salesforce B2C Commerce XML
 - Salesforce B2B Commerce CSV
 
-La idea es ahorrar tiempo en demos: intentar `100% auto` primero y pedir ayuda minima al usuario solo cuando haga falta.
+The goal is simple: save time during demos by trying `100% automatic` discovery first, then asking the user for the smallest amount of help only when needed.
 
-## Principio de uso: Never Assume
+## Operating principle: Never Assume
 
-Este proyecto debe documentarse y usarse con una regla simple:
+This project should always be documented and used with one rule:
 
-- no asumir que el usuario ya clono el repo
-- no asumir que el usuario ya esta dentro de la carpeta correcta
-- no asumir que `Node.js` ya esta instalado
-- no asumir que `npm install` ya se ejecuto
-- no asumir que Playwright ya tiene Chromium instalado
-- no asumir que el sitio target tiene una PLP o una PDP facil de descubrir
-- no asumir que el usuario sabe si debe usar el repo runnable o el skill
+- do not assume the user already cloned the repo
+- do not assume the user is already in the correct folder
+- do not assume `Node.js` is already installed
+- do not assume `npm install` has already been run
+- do not assume Playwright already has Chromium installed
+- do not assume the target site has an easy-to-discover PLP or PDP
+- do not assume the user knows whether they should use the runnable repo or the skill
 
-Por eso, abajo veras siempre pasos completos y comandos literales.
+Because of that, the setup below always uses complete, literal commands.
 
-## Regla importante sobre `npm init -y`
+## Important rule about `npm init -y`
 
-No asumas que siempre hay que ejecutar `npm init -y`.
+Do not assume `npm init -y` is always required.
 
-Depende del punto de partida:
+It depends on your starting point:
 
-- si clonas este repo, no ejecutes `npm init -y`
-- si copias la plantilla standalone del skill, no ejecutes `npm init -y`
-- si empiezas en una carpeta vacia y vas a crear un proyecto Node manualmente desde cero, entonces si: ejecuta `npm init -y`
+- if you clone this repo, do not run `npm init -y`
+- if you copy the standalone template from the skill, do not run `npm init -y`
+- if you start from a completely empty folder and want to create a Node project manually, then yes: run `npm init -y`
 
-Regla practica:
+Practical rule:
 
-- si ya existe `package.json`, no hagas `npm init -y`
-- si no existe `package.json`, crea el proyecto Node primero
+- if `package.json` already exists, do not run `npm init -y`
+- if `package.json` does not exist, create the Node project first
 
-## Lo importante: hay 2 piezas distintas
+## There are 2 different things here
 
-### 1. Este repo
+### 1. This repo
 
-Es el producto ejecutable.
+This is the runnable product.
 
-Incluye:
+It includes:
 
-- el CLI runnable
-- el motor de discovery y extraction
-- los exporters
-- los tests
-- los perfiles por sitio
+- the runnable CLI
+- the discovery and extraction engine
+- the exporters
+- the tests
+- per-site profiles
 
-Si quieres sacar catalogos hoy, esta es la opcion principal.
+If you want to produce catalogs today, this is the main option.
 
-### 2. El skill
+### 2. The skill
 
-Esta en:
+It lives here:
 
 - [skills/salesforce-commerce-catalog-builder/SKILL.md](/Users/dsiguenza/Documents/B2C_CC/catalogo%20de%20productos/skills/salesforce-commerce-catalog-builder/SKILL.md)
 
-El skill no es el scraper ejecutandose por si solo.
+The skill is not the scraper running by itself.
 
-El skill es una instruccion reusable para un agente tipo Codex/Cursor:
+The skill is a reusable instruction set for an agent such as Codex/Cursor:
 
-- para montar este flujo en otro workspace
-- para copiar una plantilla standalone
-- para adaptar el proceso a otro repo sin reexplicar toda la arquitectura
+- to set up this workflow in another workspace
+- to copy a standalone template
+- to adapt the workflow to another repo without re-explaining the architecture
 
-Resumen corto:
+Short version:
 
-- si quieres usar el scraper ya: clona este repo
-- si quieres que un agente lo replique o lo adapte en otro repo: usa el skill
+- if you want to use the scraper now, clone this repo
+- if you want an agent to reproduce or adapt this capability in another repo, use the skill
 
-Importante hoy:
+Important today:
 
-- el runtime de referencia y mas actualizado es este repo
-- la plantilla standalone del skill es un bootstrap para que el agente la copie y la adapte, no la fuente de verdad del runtime mantenido
+- the main runtime lives in this repo
+- the standalone template in the skill is a bootstrap that the agent can copy and adapt, not the canonical source of the maintained runtime
 
-## Recomendacion para demos
+## Recommended path for demos
 
-Para demos con poco tiempo:
+If you want the fastest demo path:
 
-1. clona este repo
-2. entra en la carpeta del repo
-3. instala dependencias
-4. instala Chromium
-5. ejecuta `profile-site`
-6. ejecuta `scrape`
-7. revisa `visual-catalog.html`
-8. importa o enseña los outputs
+1. clone this repo
+2. enter the repo folder
+3. install dependencies
+4. install Chromium
+5. run `profile-site`
+6. run `scrape`
+7. review `visual-catalog.html`
+8. import or present the outputs
 
-El skill lo reservaria para estos casos:
+Reserve the skill for these cases:
 
-- quieres llevar este mismo flujo a otro repo
-- quieres que un agente te cree una version standalone en una carpeta vacia
-- quieres distribuir la capacidad como receta reusable para otros equipos
+- you want to bring this workflow into another repo
+- you want an agent to create a standalone version in an empty folder
+- you want to distribute the capability as a reusable recipe across teams
 
-## Instalacion local del repo
+## Local setup for this repo
 
-### 1. Clonar el repo
+### 1. Clone the repo
 
-Si todavia no tienes este proyecto en local, ejecuta exactamente esto:
+If you do not already have this project locally, run exactly this:
 
 ```bash
 git clone https://github.com/davidsiguenza/sf-cc-catalog-creator.git
 cd sf-cc-catalog-creator
 ```
 
-Despues de hacer `git clone`, este repo ya trae `package.json`.
+After `git clone`, this repo already contains `package.json`.
 
-Eso significa:
+That means:
 
-- no necesitas `npm init -y`
-- puedes pasar directamente a `npm install`
+- you do not need `npm init -y`
+- you can go directly to `npm install`
 
-### 2. Comprobar prerequisitos
+### 2. Check prerequisites
 
-Antes de seguir, comprueba que tienes `Node.js` y `npm`:
+Before going further, verify that `Node.js` and `npm` are available:
 
 ```bash
 node -v
 npm -v
 ```
 
-Requisitos minimos:
+Minimum requirements:
 
 - Node.js `>= 20`
-- Chromium de Playwright
+- Playwright Chromium runtime
 
-Si `node -v` o `npm -v` fallan, primero instala Node.js y vuelve a este paso.
+If `node -v` or `npm -v` fail, install Node.js first and come back to this step.
 
-### 3. Instalar dependencias del proyecto
+### 3. Install project dependencies
 
-Desde la raiz del repo, ejecuta:
+From the repo root, run:
 
 ```bash
 npm install
 ```
 
-No ejecutes antes `npm init -y` aqui, porque este repo ya esta inicializado como proyecto Node.
+Do not run `npm init -y` here, because this repo is already a Node project.
 
-### Error tipico: `npm install` falla con `ENOENT package.json`
+### Common error: `npm install` fails with `ENOENT package.json`
 
-Si ves algo como esto:
+If you see something like:
 
 ```text
 npm error enoent Could not read package.json
 ```
 
-significa una de estas dos cosas:
+it means one of these two things:
 
-1. no estas dentro del repo clonado
-2. estas en una carpeta vacia que todavia no es un proyecto Node
+1. you are not inside the cloned repo
+2. you are in an empty folder that is not yet a Node project
 
-Ejemplo de caso incorrecto:
+Example of the wrong situation:
 
 ```bash
 cd test-catalog
 npm install
 ```
 
-Eso falla si `test-catalog/` no contiene `package.json`.
+That fails if `test-catalog/` does not contain `package.json`.
 
-La correccion depende del caso:
+The fix depends on what you actually want to do.
 
-Caso A: quieres usar este repo
+Case A: you want to use this repo
 
 ```bash
 git clone https://github.com/davidsiguenza/sf-cc-catalog-creator.git
@@ -174,7 +174,7 @@ npm install
 npx playwright install chromium
 ```
 
-Caso B: quieres crear un proyecto Node vacio manualmente
+Case B: you want to create a brand-new Node project manually
 
 ```bash
 mkdir test-catalog
@@ -182,26 +182,26 @@ cd test-catalog
 npm init -y
 ```
 
-Pero ojo: despues de `npm init -y`, tu proyecto sigue vacio. Aun no tiene `playwright` ni el scraper.
+But note: after `npm init -y`, your project is still empty. It does not yet contain `playwright` or this scraper.
 
-Si haces:
+If you run:
 
 ```bash
 npm install
 ```
 
-sin dependencias declaradas, `npm` no instalara nada util para este caso.
+with no dependencies declared, npm will not install anything useful for this use case.
 
-### Error tipico: `npx playwright install chromium` avisa que faltan dependencias
+### Common error: `npx playwright install chromium` warns that dependencies are missing
 
-Si ves el warning de Playwright diciendo que primero debes instalar dependencias del proyecto, el significado es:
+If Playwright warns that you should install project dependencies first, that means:
 
-- tu `package.json` existe
-- pero tu proyecto no tiene `playwright` instalado
+- your `package.json` exists
+- but the project does not have `playwright` installed
 
-Eso es exactamente lo que pasa si hiciste `npm init -y` en una carpeta vacia y luego `npm install` sin instalar ninguna dependencia.
+That is exactly what happens if you run `npm init -y` in an empty folder and then run `npm install` without adding any dependencies.
 
-Si estas creando un proyecto manual desde cero, el orden minimo seria:
+If you are building a project manually from scratch, the minimum order is:
 
 ```bash
 npm init -y
@@ -209,7 +209,7 @@ npm install playwright
 npx playwright install chromium
 ```
 
-Si quieres usar este scraper, no hagas ese camino. Haz este:
+If you want to use this scraper, do not take that path. Use this instead:
 
 ```bash
 git clone https://github.com/davidsiguenza/sf-cc-catalog-creator.git
@@ -218,27 +218,27 @@ npm install
 npx playwright install chromium
 ```
 
-### 4. Instalar Chromium para Playwright
+### 4. Install Chromium for Playwright
 
-Desde la raiz del repo, ejecuta:
+From the repo root, run:
 
 ```bash
 npx playwright install chromium
 ```
 
-### 5. Ver ayuda del CLI
+### 5. Check the CLI
 
-Para comprobar que el proyecto esta listo:
+To confirm the project is ready:
 
 ```bash
 npm start -- help
 ```
 
-## Flujo recomendado
+## Recommended workflow
 
-### 1. Perfilar una web nueva
+### 1. Profile a new site
 
-Si la web es nueva o sospechas que no encaja en heuristicas genericas, arranca por aqui:
+If the site is new or likely does not fit generic heuristics well, start here:
 
 ```bash
 npm start -- profile-site \
@@ -250,29 +250,29 @@ npm start -- profile-site \
 
 `profile-site`:
 
-- detecta plataforma si puede
-- aprende patrones de categoria y producto
-- genera `profiles/<domain>.json`
-- deja un resumen en `output/<domain>/profile-summary.json`
+- detects the platform when possible
+- learns category and product patterns
+- generates `profiles/<domain>.json`
+- writes a summary to `output/<domain>/profile-summary.json`
 
-Las URLs auxiliares son opcionales, pero muy utiles:
+The helper URLs are optional, but very useful:
 
 - `--home-url`
 - `--plp-url`
 - `--search-url`
 - `--pdp-url`
 
-Si no sabes aun esas URLs, puedes empezar solo con:
+If you do not know those URLs yet, you can start with:
 
 ```bash
 npm start -- profile-site --url https://example.com
 ```
 
-Si el sistema no encuentra suficiente contexto y estas en una terminal interactiva, te pedira `PLP URL`, `PDP URL` o `Search URL` y reintentara.
+If the system cannot find enough context and you are in an interactive terminal, it can ask for `PLP URL`, `PDP URL`, or `Search URL` and retry automatically.
 
-### 2. Ejecutar el scrape
+### 2. Run the scrape
 
-Modo automatico:
+Automatic mode:
 
 ```bash
 npm start -- scrape \
@@ -282,7 +282,7 @@ npm start -- scrape \
   --formats generic,b2c,b2b
 ```
 
-Modo con categoria concreta:
+Single category mode:
 
 ```bash
 npm start -- scrape \
@@ -292,7 +292,7 @@ npm start -- scrape \
   --formats generic,b2c,b2b
 ```
 
-Modo con config JSON:
+JSON config mode:
 
 ```bash
 npm start -- scrape \
@@ -300,9 +300,9 @@ npm start -- scrape \
   --formats generic,b2c,b2b
 ```
 
-### 3. Revisar el resultado
+### 3. Review the result
 
-Archivos principales:
+Main output files:
 
 - `output/<domain>/generic-products.csv`
 - `output/<domain>/visual-catalog.html`
@@ -310,9 +310,9 @@ Archivos principales:
 - `output/<domain>/salesforce-b2c/*`
 - `output/<domain>/salesforce-b2b/*`
 
-### 4. Flujo literal de demo de extremo a extremo
+### 4. Literal end-to-end demo flow
 
-Si quieres el flujo mas literal posible, sin asumir nada, seria este:
+If you want the most literal flow possible, with no hidden assumptions, use this:
 
 ```bash
 git clone https://github.com/davidsiguenza/sf-cc-catalog-creator.git
@@ -325,62 +325,62 @@ npm start -- profile-site --url https://example.com
 npm start -- scrape --url https://example.com --formats generic,b2c,b2b
 ```
 
-Despues revisas:
+Then review:
 
 ```bash
 open output/example-com/visual-catalog.html
 ```
 
-Si no quieres usar `open`, abre manualmente:
+If you do not want to use `open`, manually open:
 
 - `output/example-com/visual-catalog.html`
 
-## Como funciona el sistema
+## How the system works
 
-### Auto primero
+### Automatic first
 
-El flujo intenta siempre:
+The default flow is always:
 
-1. descubrir categorias/PLPs
-2. descubrir PDPs
-3. extraer producto
-4. validar calidad
-5. exportar
+1. discover categories / PLPs
+2. discover PDPs
+3. extract product data
+4. validate quality
+5. export outputs
 
-### Asistido cuando hace falta
+### Assisted only when needed
 
-Si no encuentra contexto suficiente, el sistema genera una peticion de ayuda estructurada.
+If the system cannot find enough context, it generates a structured assistance request.
 
-Ejemplos:
+Examples:
 
-- no encuentra PLPs: pide `PLP URL`
-- encuentra PLP pero no PDP fiable: pide `PDP URL`
-- el perfil sigue ambiguo: pide opcionalmente `Search URL`
+- if it cannot find PLPs, it asks for a `PLP URL`
+- if it finds a PLP but not a reliable PDP, it asks for a `PDP URL`
+- if the profile is still ambiguous, it may optionally ask for a `Search URL`
 
-Si ejecutas el CLI en una terminal interactiva, el propio comando puede pedirte esas URLs y reintentar automaticamente.
+If you run the CLI in an interactive terminal, the command can ask for those URLs and retry automatically.
 
-Si ejecutas en un entorno no interactivo, el resumen guarda esta seccion:
+If you run it in a non-interactive environment, the summaries store:
 
-- `assistance` en `run-summary.json`
-- `assistance` en `profile-summary.json`
+- `assistance` in `run-summary.json`
+- `assistance` in `profile-summary.json`
 
-Puedes desactivar el reintento interactivo con:
+You can disable interactive retry with:
 
 ```bash
 --interactive-assistance false
 ```
 
-### Perfiles por sitio
+### Per-site profiles
 
-Los aprendizajes persistentes van en:
+Persistent learning is stored in:
 
 - `profiles/<domain>.json`
 
-Eso permite que la segunda ejecucion sobre la misma tienda no empiece desde cero.
+That means the second run for the same site does not need to start from zero.
 
-### Plataformas
+### Platforms
 
-Hoy el motor intenta detectar familias de tienda como:
+The engine currently tries to identify storefront families such as:
 
 - Shopify
 - SFCC
@@ -388,90 +388,90 @@ Hoy el motor intenta detectar familias de tienda como:
 - legacy ASP.NET store
 - generic
 
-Cuando no encaja con ninguna, el sistema cae a `generic` y puede pedir muestras reales al usuario.
+If nothing matches cleanly, it falls back to `generic` and can ask the user for real sample URLs.
 
-## Usar el repo directamente con un agente
+## Use the repo directly with an agent
 
-Si ya estas en este repo con Codex/Cursor, puedes pedir cosas como:
+If you are already inside this repo with Codex/Cursor, you can ask for things like:
 
 ```text
-Ejecuta profile-site para https://example.com. Si falta contexto, pídeme una PLP y una PDP y reintenta.
+Run profile-site for https://example.com. If context is missing, ask me for a PLP and a PDP, then retry.
 ```
 
 ```text
-Haz un scrape para https://example.com, genera CSV/HTML/B2C/B2B y dime si la extracción es válida.
+Run a scrape for https://example.com, generate CSV/HTML/B2C/B2B outputs, and tell me whether the extraction is valid.
 ```
 
-El agente puede usar:
+The agent can use:
 
-- el CLI
-- los summaries
-- los perfiles guardados
-- la seccion `assistance` para saber que pedirte
+- the CLI
+- the summaries
+- the saved profiles
+- the `assistance` section to know what to ask for
 
-No asumas que el agente sabe si prefieres CLI o flujo asistido. Si quieres una de las dos cosas, dilo de forma explicita.
+Do not assume the agent knows whether you prefer strict CLI usage or an assisted flow. If you care, say so explicitly.
 
-Prompt ejemplo para CLI:
+Prompt example for CLI-first usage:
 
 ```text
-Usa el CLI de este repo. Primero ejecuta profile-site para https://example.com. Si falta contexto, pídeme una PLP y una PDP. Luego ejecuta scrape y valida el resultado.
+Use the CLI in this repo. First run profile-site for https://example.com. If context is missing, ask me for a PLP and a PDP. Then run scrape and validate the result.
 ```
 
-Prompt ejemplo para trabajo totalmente asistido:
+Prompt example for a fully assisted flow:
 
 ```text
-Quiero una demo real con esta web. Haz todo el flujo de profile-site y scrape, y si te faltan PLPs o PDPs pídemelas antes de continuar.
+I want a real demo with this site. Run the full profile-site and scrape flow, and if PLPs or PDPs are missing ask me before continuing.
 ```
 
-## Usar el skill en otro workspace
+## Use the skill in another workspace
 
-Si quieres distribuir esta capacidad a otros equipos o llevarla a otro repo, entonces usas el skill.
+If you want to distribute this capability across teams or bring it into another repo, then use the skill.
 
-### 1. Instalar el skill
+### 1. Install the skill
 
-No asumas que el skill ya esta instalado.
+Do not assume the skill is already installed.
 
-Desde cualquier terminal con acceso a `npx`, ejecuta:
+From any terminal with access to `npx`, run:
 
 ```bash
 npx skills add https://github.com/davidsiguenza/sf-cc-catalog-creator.git --skill salesforce-commerce-catalog-builder
 ```
 
-### 2. Reiniciar Cursor/Codex si hace falta
+### 2. Restart Cursor/Codex if needed
 
-Si el skill no aparece en la UI o no responde al invocarlo, reinicia la aplicacion y vuelve a abrir el workspace.
+If the skill does not appear in the UI or does not respond when invoked, restart the app and reopen the workspace.
 
-### 3. Abrir un workspace vacio o un repo destino
+### 3. Open an empty workspace or target repo
 
-No asumas que el skill crea cosas fuera del workspace actual. Abre primero la carpeta donde quieres que el agente trabaje.
+Do not assume the skill creates files outside the current workspace. First open the folder where you want the agent to work.
 
-### 4. Pedir explicitamente el flujo que quieres
+### 4. Explicitly request the flow you want
 
-Luego, en un workspace vacio o en un repo destino, puedes pedir algo como:
+Then, in an empty workspace or target repo, you can ask for something like:
 
 ```text
 Use $salesforce-commerce-catalog-builder to create a standalone scraper project in this workspace, install dependencies, profile the target site, ask me for PLP/PDP URLs if discovery is ambiguous, run the scrape, and leave the outputs in output/.
 ```
 
-Punto importante:
+Important:
 
-- el skill no sustituye este repo
-- el skill ayuda a recrear o adaptar este repo
-- si solo quieres ejecutar el scraper ya existente, no uses el skill: clona este repo y usa el CLI
+- the skill does not replace this repo
+- the skill helps recreate or adapt this repo
+- if you just want to run the existing scraper, do not use the skill: clone this repo and use the CLI
 
-### Caso especial: carpeta vacia sin proyecto Node
+### Special case: empty folder with no Node project
 
-Si no estas clonando este repo y tampoco estas copiando la plantilla standalone, y quieres montar algo manualmente desde una carpeta vacia, el orden minimo seria:
+If you are not cloning this repo and you are not copying the standalone template, and you want to start manually from an empty folder, the minimum order is:
 
 ```bash
-mkdir mi-scraper
-cd mi-scraper
+mkdir my-scraper
+cd my-scraper
 npm init -y
 npm install playwright
 npx playwright install chromium
 ```
 
-Pero para este proyecto en concreto, el camino recomendado sigue siendo:
+But for this project specifically, the recommended path is still:
 
 ```bash
 git clone https://github.com/davidsiguenza/sf-cc-catalog-creator.git
@@ -480,9 +480,9 @@ npm install
 npx playwright install chromium
 ```
 
-## Que outputs genera
+## Generated outputs
 
-### Genericos
+### Generic outputs
 
 - `generic-products.csv`
 - `visual-catalog.html`
@@ -497,24 +497,24 @@ npx playwright install chromium
 
 - `commerce-import.csv`
 
-### Resumenes
+### Summaries
 
 - `run-summary.json`
 - `profile-summary.json`
 
-## Estructura util del proyecto
+## Useful project structure
 
-- [src/cli.js](/Users/dsiguenza/Documents/B2C_CC/catalogo%20de%20productos/src/cli.js): entrada de comandos
-- [src/profiler.js](/Users/dsiguenza/Documents/B2C_CC/catalogo%20de%20productos/src/profiler.js): perfilado de sitios
-- [src/scraper.js](/Users/dsiguenza/Documents/B2C_CC/catalogo%20de%20productos/src/scraper.js): orquestacion de scrape
-- [src/fetch-storefront.js](/Users/dsiguenza/Documents/B2C_CC/catalogo%20de%20productos/src/fetch-storefront.js): transporte HTTP para tiendas donde Playwright no sea viable
-- [src/site-profiles/](/Users/dsiguenza/Documents/B2C_CC/catalogo%20de%20productos/src/site-profiles): perfiles por dominio
-- [profiles/](/Users/dsiguenza/Documents/B2C_CC/catalogo%20de%20productos/profiles): perfiles generados
-- [docs/target-architecture.md](/Users/dsiguenza/Documents/B2C_CC/catalogo%20de%20productos/docs/target-architecture.md): arquitectura objetivo
+- [src/cli.js](/Users/dsiguenza/Documents/B2C_CC/catalogo%20de%20productos/src/cli.js): command entry point
+- [src/profiler.js](/Users/dsiguenza/Documents/B2C_CC/catalogo%20de%20productos/src/profiler.js): site profiling
+- [src/scraper.js](/Users/dsiguenza/Documents/B2C_CC/catalogo%20de%20productos/src/scraper.js): scrape orchestration
+- [src/fetch-storefront.js](/Users/dsiguenza/Documents/B2C_CC/catalogo%20de%20productos/src/fetch-storefront.js): HTTP transport for sites where Playwright is not viable
+- [src/site-profiles/](/Users/dsiguenza/Documents/B2C_CC/catalogo%20de%20productos/src/site-profiles): profile system
+- [profiles/](/Users/dsiguenza/Documents/B2C_CC/catalogo%20de%20productos/profiles): generated profiles
+- [docs/target-architecture.md](/Users/dsiguenza/Documents/B2C_CC/catalogo%20de%20productos/docs/target-architecture.md): target architecture
 
-## Ejemplos rapidos
+## Quick examples
 
-### Web nueva, con ayuda del usuario desde el principio
+### New site, user helps from the beginning
 
 ```bash
 npm start -- profile-site \
@@ -531,61 +531,56 @@ npm start -- scrape \
   --formats generic,b2c,b2b
 ```
 
-### Web nueva, modo casi automatico
+### New site, almost fully automatic
 
 ```bash
 npm start -- profile-site --url https://example.com
 npm start -- scrape --url https://example.com --formats generic,b2c,b2b
 ```
 
-Si el sistema necesita ayuda y estas en terminal interactiva, te pedira las URLs y reintentara.
+If the system needs help and you are in an interactive terminal, it can ask for URLs and retry.
 
-## Desarrollo y validacion
+## Development and validation
 
-Tests:
+Run tests:
 
 ```bash
 npm test
 ```
 
-Sincronizar la plantilla standalone del skill con el runtime principal:
+Synchronize the standalone skill template with the main runtime:
 
 ```bash
 npm run sync:standalone-template
 ```
 
-Si una tienda concreta falla:
+If a specific site fails:
 
-1. ejecuta `profile-site`
-2. mira `profile-summary.json`
-3. revisa `assistance`
-4. aporta `PLP/PDP/Search URL` si hace falta
-5. relanza `scrape`
+1. run `profile-site`
+2. inspect `profile-summary.json`
+3. review `assistance`
+4. provide `PLP/PDP/Search URL` if needed
+5. rerun `scrape`
 
-## Checklist minima para una persona de demo
+## Minimum checklist for a demo user
 
-Si alguien tiene que usar esto sin contexto previo, esta es la lista minima:
+If someone needs to use this without prior context, this is the minimum checklist:
 
-1. Ejecuta `git clone https://github.com/davidsiguenza/sf-cc-catalog-creator.git`
-2. Ejecuta `cd sf-cc-catalog-creator`
-3. Confirma que ya existe `package.json`
-4. Ejecuta `node -v` y confirma `>= 20`
-5. Ejecuta `npm install`
-6. Ejecuta `npx playwright install chromium`
-7. Ejecuta `npm start -- profile-site --url <HOME>`
-8. Si el sistema lo pide, aporta `PLP URL` y `PDP URL`
-9. Ejecuta `npm start -- scrape --url <HOME> --formats generic,b2c,b2b`
-10. Revisa `output/<domain>/visual-catalog.html`
-11. Usa `run-summary.json` para confirmar que los productos son válidos
+1. Run `git clone https://github.com/davidsiguenza/sf-cc-catalog-creator.git`
+2. Run `cd sf-cc-catalog-creator`
+3. Confirm that `package.json` already exists
+4. Run `node -v` and confirm `>= 20`
+5. Run `npm install`
+6. Run `npx playwright install chromium`
+7. Run `npm start -- profile-site --url <HOME>`
+8. If the system asks for them, provide `PLP URL` and `PDP URL`
+9. Run `npm start -- scrape --url <HOME> --formats generic,b2c,b2b`
+10. Review `output/<domain>/visual-catalog.html`
+11. Use `run-summary.json` to confirm the products are valid
 
-## Decision final
+## Final decision rule
 
-Si alguien de negocio o preventa quiere usar esto para una demo:
+If a sales engineer or demo owner asks, “Is this a skill or a runnable scraper?”, the correct answer is:
 
-- camino corto: clonar repo y ejecutar CLI
-- camino reusable: instalar skill para que un agente lo despliegue en otro workspace
-
-Si alguien pregunta "esto es un skill o es un scraper runnable?", la respuesta correcta es:
-
-- este repo es el scraper runnable
-- este repo tambien contiene un skill para replicar/adaptar esa capacidad en otros repos
+- this repo is the runnable scraper
+- this repo also contains a skill that helps replicate or adapt that capability in other repos
