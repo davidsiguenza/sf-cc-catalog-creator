@@ -287,17 +287,29 @@ function finalizeInspection(sample, inspection) {
   };
 }
 
-function inferPageType(sample, inspection) {
-  if (inspection.signals.hasJsonLdProduct || (inspection.signals.hasAddToCart && inspection.signals.hasPriceNodes)) {
-    return "pdp";
-  }
+export function inferPageType(sample, inspection) {
+  const hasProductSchema = inspection.signals.hasJsonLdProduct;
+  const hasPurchaseSignals = inspection.signals.hasAddToCart && inspection.signals.hasPriceNodes;
+  const hasStrongPlpSignals =
+    inspection.productCandidateCount >= 6 || (sample.type === "plp" && inspection.productCandidateCount >= 3);
 
   if (sample.type === "search" || /search/i.test(inspection.url)) {
     return "search";
   }
 
-  if (inspection.productCandidateCount >= 6) {
+  if (sample.type === "pdp" && (hasProductSchema || hasPurchaseSignals)) {
+    return "pdp";
+  }
+
+  // SFCC PLPs often expose quick-view CTAs and prices inside product cards.
+  // When the user explicitly marked the page as PLP, or the page exposes many product links,
+  // that listing signal should win over add-to-cart noise.
+  if (hasStrongPlpSignals) {
     return "plp";
+  }
+
+  if (hasProductSchema || hasPurchaseSignals) {
+    return "pdp";
   }
 
   if (sample.type === "home" || inspection.categoryCandidateCount >= 4) {
