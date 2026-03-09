@@ -24,6 +24,7 @@ Use this skill when the user wants a reusable storefront scraping pipeline that 
    - do not modify the user's existing app files unless the user explicitly asks for integration
 
 3. If `assets/standalone-template/` exists in this skill, copy that template instead of inventing a fresh implementation. It is the preferred bootstrap path because it already contains the validated CLI, exporters, tests, and defaults.
+   If the root repo contains a newer runtime than the packaged template, prefer the newer runtime or sync the template before handing off the result.
 
 4. If no template is available, scaffold a small Node CLI with Playwright and a modular structure equivalent to:
    - `src/cli.js`
@@ -60,6 +61,7 @@ Use this skill when the user wants a reusable storefront scraping pipeline that 
 10. Do not stop after writing files. Run the full flow:
     - install dependencies
     - install Chromium
+    - profile the site first when it is new or ambiguous
     - execute the scrape
     - confirm that products were actually exported
 
@@ -71,6 +73,8 @@ Use this skill when the user wants a reusable storefront scraping pipeline that 
 
 12. If the scrape produces an empty CSV or no B2C/B2B files:
     - inspect the site config and selectors
+    - ask the user for a real home, PLP, search, or PDP URL when discovery is ambiguous
+    - rerun `profile-site` with those URLs before retrying `scrape`
     - retry with category URLs or stronger selectors
     - only stop early if the site is blocked or the user explicitly tells you to stop
 

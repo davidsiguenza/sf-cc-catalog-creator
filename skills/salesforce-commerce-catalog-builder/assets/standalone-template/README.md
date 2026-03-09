@@ -1,8 +1,14 @@
 # Standalone Catalog Scraper Template
 
-This template is the runnable project that the skill should copy into a new workspace or subfolder.
+Este template es un bootstrap runnable que el skill puede copiar en un workspace nuevo o en un subdirectorio aislado.
 
-## Install
+Importante:
+
+- el runtime mas actualizado y mantenido vive en el repo principal
+- esta plantilla sirve como punto de arranque para que el agente la adapte
+- si necesitas las capacidades mas recientes, el agente debe sincronizar la plantilla con el runtime principal
+
+## Instalar
 
 ```bash
 npm install
@@ -11,7 +17,7 @@ npx playwright install chromium
 
 ## Run
 
-Automatic discovery:
+Scrape automatico:
 
 ```bash
 npm start -- scrape \
@@ -21,7 +27,7 @@ npm start -- scrape \
   --formats generic,b2c,b2b
 ```
 
-Site config mode:
+Config JSON:
 
 ```bash
 npm start -- scrape \
@@ -31,12 +37,12 @@ npm start -- scrape \
 
 ## Output
 
-Generated files appear in `output/<domain>/`.
+Los archivos aparecen en `output/<domain>/`.
 
 - `generic-products.csv`
 - `visual-catalog.html`
+- `run-summary.json`
 - `salesforce-b2c/<brand>-catalog.xml`
 - `salesforce-b2c/<brand>-pricebooks.xml`
 - `salesforce-b2c/<brand>-inventory.xml`
 - `salesforce-b2b/commerce-import.csv`
-- `run-summary.json`

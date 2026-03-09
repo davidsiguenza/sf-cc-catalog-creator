@@ -1,5 +1,10 @@
 import path from "node:path";
 
+import {
+  DEFAULT_CATEGORY_DISCOVERY,
+  DEFAULT_PAGINATION,
+  DEFAULT_PRODUCT_DISCOVERY,
+} from "./site-profiles/defaults.js";
 import { readJsonFile } from "./utils/fs.js";
 
 export async function loadSiteConfig(configPath) {
@@ -21,42 +26,29 @@ export function mergeOptionsWithConfig(defaults, parsed, config) {
     categoryUrls: parsed.categoryUrls.length ? parsed.categoryUrls : config.categoryUrls || [],
     formats: parsed.formats || config.formats || defaults.formats,
     categoryDiscovery: {
-      selectors: [
-        "header nav a[href]",
-        "nav a[href]",
-        "[role='navigation'] a[href]",
-        ".menu a[href]",
-        ".navigation a[href]",
-      ],
-      includePatterns: ["/c/", "cgid=", "/collections/", "/category/", "/departments/", "/shop/"],
-      excludePatterns: ["/account", "/login", "/cart", "/checkout", "/wishlist", "/search", "/blog"],
+      ...DEFAULT_CATEGORY_DISCOVERY,
       ...(config.categoryDiscovery || {}),
     },
     productDiscovery: {
-      selectors: [
-        "a[href*='/p/']",
-        "a[href*='/product/']",
-        "a[href*='/products/']",
-        "a[href*='pid=']",
-        "[data-product-id] a[href]",
-        ".product a[href]",
-        ".product-card a[href]",
-      ],
+      ...DEFAULT_PRODUCT_DISCOVERY,
       ...(config.productDiscovery || {}),
     },
     pagination: {
-      selectors: [
-        "a[rel='next']",
-        ".pagination-next a[href]",
-        ".next a[href]",
-        ".pagination a.next[href]",
-      ],
+      ...DEFAULT_PAGINATION,
       ...(config.pagination || {}),
     },
     productExtraction: {
-      name: ["h1", "meta[property='og:title']@content", "meta[name='twitter:title']@content"],
+      name: [
+        "[itemprop='name']",
+        ".productName",
+        ".product-name",
+        "h1",
+        "meta[property='og:title']@content",
+        "meta[name='twitter:title']@content",
+      ],
       description: [
         "[itemprop='description']",
+        ".productDescription",
         ".product-description",
         "meta[name='description']@content",
       ],
@@ -67,12 +59,25 @@ export function mergeOptionsWithConfig(defaults, parsed, config) {
         ".product-id",
       ],
       price: [
+        "[itemprop='price']",
         "[itemprop='price']@content",
         ".sales .value",
         ".price",
         ".product-price",
       ],
+      currency: [
+        "[itemprop='priceCurrency']",
+        "[itemprop='priceCurrency']@content",
+        ".currency option[selected]@value",
+        ".currency option[selected]",
+      ],
       images: [
+        "a.additionalImage@href",
+        ".additionalImage@href",
+        "a.fancygallery@href",
+        "#ProductImage@src",
+        "img.productImage@src",
+        "[itemprop='image']@src",
         "meta[property='og:image']@content",
         ".product-detail img@src",
         ".product img@src",

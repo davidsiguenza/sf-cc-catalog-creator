@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "domain": "eu.salesforcestore.com",
+  "entryUrl": "https://eu.salesforcestore.com/Default.aspx",
+  "platformHint": "legacy-aspnet-store",
+  "platformConfidence": 0.88,
+  "sampleUrls": {
+    "home": "https://eu.salesforcestore.com/Default.aspx",
+    "plp": "https://eu.salesforcestore.com/Apparel-C2.aspx",
+    "pdp": "https://eu.salesforcestore.com/Salesforce-Patagonia-Daypack-P1532.aspx"
+  },
+  "urlPatterns": {
+    "category": [
+      "-C\\d+\\.aspx$"
+    ],
+    "product": [
+      "-P\\d+\\.aspx$"
+    ]
+  },
+  "categoryDiscovery": {
+    "selectors": [
+      "a[href*='-C']",
+      "#accordion a[href]",
+      "header nav a[href]",
+      "nav a[href]",
+      "[role='navigation'] a[href]",
+      ".menu a[href]",
+      ".navigation a[href]"
+    ],
+    "includePatterns": [
+      "/c/",
+      "cgid=",
+      "/collections/",
+      "/category/",
+      "/departments/",
+      "/shop/",
+      "-C\\d+\\.aspx$"
+    ],
+    "excludePatterns": [
+      "/account",
+      "/login",
+      "/cart",
+      "/checkout",
+      "/wishlist",
+      "/search",
+      "/blog"
+    ]
+  },
+  "productDiscovery": {
+    "selectors": [
+      "a[href*='-P']",
+      ".productItemDisplay a[href]",
+      "a[href*='/p/']",
+      "a[href*='/product/']",
+      "a[href*='/products/']",
+      "a[href*='pid=']",
+      "[data-product-id] a[href]",
+      ".product a[href]",
+      ".product-card a[href]"
+    ]
+  },
+  "pagination": {
+    "selectors": [
+      "a[rel='next']",
+      ".pagination-next a[href]",
+      ".next a[href]",
+      ".pagination a.next[href]"
+    ]
+  },
+  "preferredSources": [
+    "dom"
+  ],
+  "confidence": 0.83,
+  "recommendations": [
+    "Se detectaron senales de ASP.NET Web Forms y patrones legacy ASPX."
+  ],
+  "learningCandidates": []
+}

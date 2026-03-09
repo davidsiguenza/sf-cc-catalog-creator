@@ -8,12 +8,14 @@
   },
   "scripts": {
     "start": "node src/index.js",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "sync:standalone-template": "node scripts/sync-standalone-template.mjs"
   },
   "engines": {
     "node": ">=20"
   },
   "dependencies": {
+    "cheerio": "^1.2.0",
     "playwright": "^1.49.1"
   }
 }
