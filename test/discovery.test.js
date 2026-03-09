@@ -10,6 +10,15 @@ test("scoreProductUrl reconoce patrones clasicos y legacy ASPX", () => {
   assert.equal(looksLikeProductUrl("https://shop.example.com/account"), false);
 });
 
+test("scoreProductUrl prioriza PDP SEO de SFCC frente a quick view", () => {
+  const seoProductUrl = "https://www.alvaromoreno.com/es_es/americana-domenico-crudo-769126050_IVO.html";
+  const quickViewUrl =
+    "https://www.alvaromoreno.com/on/demandware.store/Sites-AlvaroMoreno_es-Site/es/Product-ShowQuickView?pid=769126050_IVO";
+
+  assert.ok(scoreProductUrl(seoProductUrl) > scoreProductUrl(quickViewUrl));
+  assert.ok(looksLikeProductUrl(seoProductUrl));
+});
+
 test("scoreCategoryCandidate reconoce categorias legacy y evita textos excluidos", () => {
   const options = {
     categoryDiscovery: {

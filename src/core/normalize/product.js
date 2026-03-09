@@ -103,6 +103,16 @@ function normalizeSku(value, bodyText, productUrl) {
     return match[1];
   }
 
+  try {
+    const productPid = new URL(productUrl).searchParams.get("pid");
+
+    if (productPid) {
+      return productPid;
+    }
+  } catch {
+    // Ignore invalid URLs and keep fallback behavior below.
+  }
+
   return slugify(productUrl).slice(0, 50);
 }
 

@@ -65,6 +65,31 @@ test("normalizeExtractedProduct crea producto canonico con senales de origen", (
   });
 });
 
+test("normalizeExtractedProduct usa pid como fallback de sku para quick views de SFCC", () => {
+  const normalized = normalizeExtractedProduct(
+    {
+      name: "",
+      description: "",
+      sku: "",
+      price: "",
+      currency: "",
+      brand: "",
+      images: [],
+      breadcrumbTrail: ["Home", "Men", "Blazers"],
+      bodyText: "",
+      title: "",
+      canonicalUrl: "",
+      hasJsonLdProduct: false,
+    },
+    "https://www.alvaromoreno.com/on/demandware.store/Sites-AlvaroMoreno_es-Site/es/Product-ShowQuickView?pid=769126050_IVO",
+    { path: ["Men", "Blazers"] },
+    { currency: "EUR" },
+  );
+
+  assert.equal(normalized.sku, "769126050_IVO");
+  assert.equal(normalized.productId, "769126050-ivo");
+});
+
 test("validateCatalog detecta coberturas bajas y productos no validos", () => {
   const validation = validateCatalog([
     createCanonicalProduct({

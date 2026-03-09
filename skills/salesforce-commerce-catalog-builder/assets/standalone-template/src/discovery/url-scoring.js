@@ -30,8 +30,16 @@ export function scoreProductUrl(url) {
     score += 5;
   }
 
+  if (/-\d{6,}(?:_[A-Z0-9]+)?\.html(?:$|[?#])/i.test(url)) {
+    score += 5;
+  }
+
   if (/-p\d+(?:\.aspx)?(?:$|[?#])/i.test(url)) {
     score += 4;
+  }
+
+  if (/Product-ShowQuickView/i.test(url)) {
+    score -= 3;
   }
 
   if (/\/(cart|checkout|wishlist|login|account|search)(?:[/?#]|$)/i.test(url)) {
