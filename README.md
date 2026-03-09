@@ -272,6 +272,8 @@ If the system cannot find enough context and you are in an interactive terminal,
 
 In `scrape`, when it asks for a `PLP URL`, you can now provide one or several PLPs. If the extraction works but still covers too few categories, the assistant can ask for an extra PLP and retry with all of them combined.
 
+If `profile-site` finishes with a known platform and enough confidence to continue, the CLI can also offer to launch `scrape` immediately. It reuses the profiled store URL, asks you to confirm it, asks how many categories and products per category you want, and then runs the automatic scrape for you.
+
 ### 2. Run the scrape
 
 Automatic mode:

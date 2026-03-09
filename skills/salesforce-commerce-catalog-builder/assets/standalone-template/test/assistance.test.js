@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { applyAssistanceInputsToParsed, hasGuidedSampleUrls } from "../src/assistance/interactive.js";
+import {
+  applyAutoScrapeAnswersToParsed,
+  applyAssistanceInputsToParsed,
+  hasGuidedSampleUrls,
+  shouldOfferAutoScrapeAfterProfile,
+} from "../src/assistance/interactive.js";
 import { buildProfileAssistanceRequest, buildScrapeAssistanceRequest } from "../src/assistance/request.js";
 
 test("buildScrapeAssistanceRequest pide PLP y PDP cuando no hay productos", () => {
@@ -158,4 +163,95 @@ test("applyAssistanceInputsToParsed acumula multiples PLPs para scrape", () => {
 test("hasGuidedSampleUrls detecta urls de apoyo", () => {
   assert.equal(hasGuidedSampleUrls({}), false);
   assert.equal(hasGuidedSampleUrls({ pdpUrl: "https://shop.example.com/p/red-shoe" }), true);
+});
+
+test("shouldOfferAutoScrapeAfterProfile propone continuar cuando el perfil es conocido y suficiente", () => {
+  const originalStdinTty = process.stdin.isTTY;
+  const originalStdoutTty = process.stdout.isTTY;
+
+  process.stdin.isTTY = true;
+  process.stdout.isTTY = true;
+
+  try {
+    const shouldOffer = shouldOfferAutoScrapeAfterProfile(
+      {
+        profile: {
+          platformHint: "sfcc",
+        },
+        assistance: {
+          status: "not_needed",
+        },
+      },
+      {
+        interactiveAssistance: true,
+      },
+    );
+
+    assert.equal(shouldOffer, true);
+  } finally {
+    process.stdin.isTTY = originalStdinTty;
+    process.stdout.isTTY = originalStdoutTty;
+  }
+});
+
+test("shouldOfferAutoScrapeAfterProfile no propone continuar si el perfil aun necesita ayuda", () => {
+  const originalStdinTty = process.stdin.isTTY;
+  const originalStdoutTty = process.stdout.isTTY;
+
+  process.stdin.isTTY = true;
+  process.stdout.isTTY = true;
+
+  try {
+    const shouldOffer = shouldOfferAutoScrapeAfterProfile(
+      {
+        profile: {
+          platformHint: "sfcc",
+        },
+        assistance: {
+          status: "needs_user_input",
+        },
+      },
+      {
+        interactiveAssistance: true,
+      },
+    );
+
+    assert.equal(shouldOffer, false);
+  } finally {
+    process.stdin.isTTY = originalStdinTty;
+    process.stdout.isTTY = originalStdoutTty;
+  }
+});
+
+test("applyAutoScrapeAnswersToParsed prepara un scrape automatico reutilizando el perfil", () => {
+  const next = applyAutoScrapeAnswersToParsed(
+    {
+      command: "profile-site",
+      entryUrl: "https://shop.example.com",
+      maxCategories: 4,
+      productsPerCategory: 10,
+      categoryNames: ["Men"],
+      categoryUrls: ["https://shop.example.com/category/shoes"],
+      homeUrl: "https://shop.example.com",
+      plpUrl: "https://shop.example.com/category/shoes",
+      searchUrl: "https://shop.example.com/search?q=shirt",
+      pdpUrl: "https://shop.example.com/p/red-shirt",
+    },
+    {
+      entryUrl: "https://shop.example.com",
+      maxCategories: 6,
+      productsPerCategory: 12,
+    },
+  );
+
+  assert.equal(next.command, "scrape");
+  assert.equal(next.entryUrl, "https://shop.example.com");
+  assert.equal(next.maxCategories, 6);
+  assert.equal(next.productsPerCategory, 12);
+  assert.deepEqual(next.categoryNames, []);
+  assert.deepEqual(next.categoryUrls, []);
+  assert.equal(next.homeUrl, "");
+  assert.equal(next.plpUrl, "");
+  assert.equal(next.searchUrl, "");
+  assert.equal(next.pdpUrl, "");
 });

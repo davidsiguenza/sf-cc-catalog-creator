@@ -111,6 +111,83 @@ export function hasGuidedSampleUrls(options) {
   return Boolean(options.homeUrl || options.plpUrl || options.searchUrl || options.pdpUrl);
 }
 
+export async function promptForAutoScrapeAfterProfile(result, options) {
+  if (!shouldOfferAutoScrapeAfterProfile(result, options)) {
+    return null;
+  }
+
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  try {
+    const confirmation = normalizeYesNo(
+      await rl.question("\nEl perfil parece suficiente para continuar en modo automatico. Quieres lanzar ahora el scrape? [y/N]: "),
+    );
+
+    if (!confirmation) {
+      return null;
+    }
+
+    const entryUrl = await promptUrlWithDefault(rl, "URL de la tienda", options.entryUrl);
+    const maxCategories = await promptPositiveIntegerWithDefault(
+      rl,
+      "Cuantas categorias quieres procesar",
+      options.maxCategories,
+    );
+    const productsPerCategory = await promptPositiveIntegerWithDefault(
+      rl,
+      "Cuantos productos por categoria quieres extraer",
+      options.productsPerCategory,
+    );
+
+    return {
+      entryUrl,
+      maxCategories,
+      productsPerCategory,
+    };
+  } finally {
+    rl.close();
+  }
+}
+
+export function applyAutoScrapeAnswersToParsed(parsed, answers) {
+  if (!answers) {
+    return parsed;
+  }
+
+  return {
+    ...parsed,
+    command: "scrape",
+    entryUrl: answers.entryUrl || parsed.entryUrl,
+    maxCategories: answers.maxCategories ?? parsed.maxCategories,
+    productsPerCategory: answers.productsPerCategory ?? parsed.productsPerCategory,
+    categoryNames: [],
+    categoryUrls: [],
+    homeUrl: "",
+    plpUrl: "",
+    searchUrl: "",
+    pdpUrl: "",
+  };
+}
+
+export function shouldOfferAutoScrapeAfterProfile(result, options) {
+  if (!result?.profile || result.profile.platformHint === "generic") {
+    return false;
+  }
+
+  if (result.assistance?.status === "needs_user_input") {
+    return false;
+  }
+
+  if (options.interactiveAssistance === false) {
+    return false;
+  }
+
+  return Boolean(process.stdin.isTTY && process.stdout.isTTY);
+}
+
 function shouldPromptForAssistance(assistance, options) {
   if (!assistance || assistance.status !== "needs_user_input") {
     return false;
@@ -142,6 +219,37 @@ function getExistingValue(options, id) {
 
 function normalizeYesNo(value) {
   return ["y", "yes", "s", "si"].includes(String(value || "").trim().toLowerCase());
+}
+
+async function promptUrlWithDefault(rl, label, fallback) {
+  while (true) {
+    const response = (await rl.question(`${label} [${fallback}]: `)).trim();
+    const value = response || fallback;
+
+    if (isHttpUrl(value)) {
+      return value;
+    }
+
+    console.log(`- Valor ignorado para ${label}: no parece una URL http/https valida.`);
+  }
+}
+
+async function promptPositiveIntegerWithDefault(rl, label, fallback) {
+  while (true) {
+    const response = (await rl.question(`${label} [${fallback}]: `)).trim();
+
+    if (!response) {
+      return fallback;
+    }
+
+    const parsed = Number(response);
+
+    if (Number.isInteger(parsed) && parsed > 0) {
+      return parsed;
+    }
+
+    console.log(`- Valor ignorado para ${label}: introduce un entero positivo.`);
+  }
 }
 
 function buildPromptLabel(input) {

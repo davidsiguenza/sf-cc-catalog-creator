@@ -2,8 +2,10 @@ import path from "node:path";
 
 import { buildProfileAssistanceRequest, buildScrapeAssistanceRequest } from "./assistance/request.js";
 import {
+  applyAutoScrapeAnswersToParsed,
   applyAssistanceInputsToParsed,
   hasGuidedSampleUrls,
+  promptForAutoScrapeAfterProfile,
   promptForAssistanceInputs,
 } from "./assistance/interactive.js";
 import { loadSiteConfig, mergeOptionsWithConfig } from "./config.js";
@@ -129,6 +131,14 @@ async function runScrapeCommand(parsed) {
     const answers = await promptForAssistanceInputs(assistance, options);
 
     if (!answers) {
+      const autoScrapeAnswers = await promptForAutoScrapeAfterProfile(result, options);
+
+      if (autoScrapeAnswers) {
+        const scrapeParsed = applyAutoScrapeAnswersToParsed(workingParsed, autoScrapeAnswers);
+        console.log("\nLanzando scrape automatico con el perfil generado...");
+        await runScrapeCommand(scrapeParsed);
+      }
+
       return;
     }
 
