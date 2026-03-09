@@ -92,7 +92,7 @@ export function applyAssistanceInputsToParsed(parsed, answers, command) {
     next.plpUrl = additionalPlpUrls[0];
   }
 
-  if (command === "scrape" && assistedPlpUrls.length) {
+  if ((command === "scrape" || command === "profile-site") && assistedPlpUrls.length) {
     next.categoryUrls = dedupeUrls([...(next.categoryUrls || []), ...assistedPlpUrls]);
   }
 
@@ -122,20 +122,42 @@ export async function promptForAutoScrapeAfterProfile(result, options) {
   });
 
   try {
-    const confirmation = normalizeYesNo(
-      await rl.question("\nEl perfil parece suficiente para continuar en modo automatico. Quieres lanzar ahora el scrape? [y/N]: "),
-    );
+    const profileValid = isProfileValidForAutomaticSelection(result);
+    const confirmation = normalizeYesNo(await rl.question(buildProfileContinuationPrompt(profileValid)));
 
     if (!confirmation) {
       return null;
     }
 
     const entryUrl = await promptUrlWithDefault(rl, "URL de la tienda", options.entryUrl);
-    const maxCategories = await promptPositiveIntegerWithDefault(
-      rl,
-      "Cuantas categorias quieres procesar",
-      options.maxCategories,
-    );
+    const knownPlpUrls = dedupeUrls([...(options.categoryUrls || []), ...(options.plpUrl ? [options.plpUrl] : [])]);
+    let categoryUrls = [];
+    let maxCategories = options.maxCategories;
+
+    if (profileValid) {
+      const categoryMode = await promptCategorySelectionMode(rl);
+
+      if (categoryMode === "select") {
+        categoryUrls = await promptUrlListWithDefault(
+          rl,
+          "Dame un listado de PLPs separadas por comas",
+          knownPlpUrls,
+        );
+      } else {
+        maxCategories = await promptPositiveIntegerWithDefault(
+          rl,
+          "Cuantas categorias quieres procesar",
+          options.maxCategories,
+        );
+      }
+    } else {
+      categoryUrls = await promptUrlListWithDefault(
+        rl,
+        "Dame un listado de PLPs separadas por comas",
+        knownPlpUrls,
+      );
+    }
+
     const productsPerCategory = await promptPositiveIntegerWithDefault(
       rl,
       "Cuantos productos por categoria quieres extraer",
@@ -146,6 +168,7 @@ export async function promptForAutoScrapeAfterProfile(result, options) {
       entryUrl,
       maxCategories,
       productsPerCategory,
+      categoryUrls,
     };
   } finally {
     rl.close();
@@ -164,7 +187,7 @@ export function applyAutoScrapeAnswersToParsed(parsed, answers) {
     maxCategories: answers.maxCategories ?? parsed.maxCategories,
     productsPerCategory: answers.productsPerCategory ?? parsed.productsPerCategory,
     categoryNames: [],
-    categoryUrls: [],
+    categoryUrls: answers.categoryUrls || [],
     homeUrl: "",
     plpUrl: "",
     searchUrl: "",
@@ -173,11 +196,7 @@ export function applyAutoScrapeAnswersToParsed(parsed, answers) {
 }
 
 export function shouldOfferAutoScrapeAfterProfile(result, options) {
-  if (!result?.profile || result.profile.platformHint === "generic") {
-    return false;
-  }
-
-  if (result.assistance?.status === "needs_user_input") {
+  if (!result?.profile) {
     return false;
   }
 
@@ -186,6 +205,14 @@ export function shouldOfferAutoScrapeAfterProfile(result, options) {
   }
 
   return Boolean(process.stdin.isTTY && process.stdout.isTTY);
+}
+
+export function isProfileValidForAutomaticSelection(result) {
+  if (!result?.profile || result.profile.platformHint === "generic") {
+    return false;
+  }
+
+  return result.assistance?.status !== "needs_user_input";
 }
 
 function shouldPromptForAssistance(assistance, options) {
@@ -252,6 +279,40 @@ async function promptPositiveIntegerWithDefault(rl, label, fallback) {
   }
 }
 
+async function promptUrlListWithDefault(rl, label, fallback = []) {
+  while (true) {
+    const fallbackLabel = fallback.length ? ` [${fallback.join(", ")}]` : "";
+    const response = (await rl.question(`${label}${fallbackLabel}: `)).trim();
+    const values = response ? parseHttpUrlValues(response) : fallback;
+
+    if (values.length) {
+      return dedupeUrls(values);
+    }
+
+    console.log(`- Valor ignorado para ${label}: necesito al menos una PLP valida.`);
+  }
+}
+
+async function promptCategorySelectionMode(rl) {
+  while (true) {
+    const response = normalizeLookupChoice(
+      await rl.question(
+        "\nQuieres categorias concretas o que las seleccione automaticamente? [select/auto]: ",
+      ),
+    );
+
+    if (!response || response === "auto") {
+      return "auto";
+    }
+
+    if (response === "select") {
+      return "select";
+    }
+
+    console.log("- Valor ignorado: responde `select` o `auto`.");
+  }
+}
+
 function buildPromptLabel(input) {
   const suffix = input.multiple ? " (puedes pegar varias separadas por comas o saltos de linea)" : "";
   return `${input.label}${input.required ? " (obligatorio)" : " (opcional)"}${suffix}: `;
@@ -287,4 +348,26 @@ function dedupeUrls(values) {
 
 function isHttpUrl(value) {
   return /^https?:\/\//i.test(String(value || "").trim());
+}
+
+function buildProfileContinuationPrompt(profileValid) {
+  return profileValid
+    ? "\nEl perfil es valido. Quieres continuar ahora hacia el scrape? [y/N]: "
+    : "\nEl perfil no es suficiente para modo auto. Quieres continuar igualmente con un listado de PLPs? [y/N]: ";
+}
+
+function normalizeLookupChoice(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+
+  if (["select", "seleccionar", "seleccion", "concretas", "concreta", "listado", "lista"].includes(normalized)) {
+    return "select";
+  }
+
+  if (
+    ["auto", "automatico", "automatica", "automaticamente", "automatic", ""].includes(normalized)
+  ) {
+    return "auto";
+  }
+
+  return normalized;
 }

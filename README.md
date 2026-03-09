@@ -276,6 +276,12 @@ In `scrape`, when it asks for a `PLP URL`, you can now provide one or several PL
 
 If `profile-site` finishes with a known platform and enough confidence to continue, the CLI can also offer to launch `scrape` immediately. It reuses the profiled store URL, asks you to confirm it, asks how many categories and products per category you want, and then runs the automatic scrape for you.
 
+When the user explicitly provides a PLP to `profile-site`, the flow now treats that input as trusted. It should not keep questioning whether that page is a PLP, and the follow-up prompt can branch into:
+
+- automatic category selection: ask how many categories and products per category to extract
+- concrete category selection: ask for a comma-separated list of PLPs and then products per category
+- fallback from an invalid profile: ask for a comma-separated list of PLPs and continue from there
+
 ### 2. Run the scrape
 
 Automatic mode:

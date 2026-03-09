@@ -5,6 +5,7 @@ import {
   applyAutoScrapeAnswersToParsed,
   applyAssistanceInputsToParsed,
   hasGuidedSampleUrls,
+  isProfileValidForAutomaticSelection,
   shouldOfferAutoScrapeAfterProfile,
 } from "../src/assistance/interactive.js";
 import { buildProfileAssistanceRequest, buildScrapeAssistanceRequest } from "../src/assistance/request.js";
@@ -113,6 +114,31 @@ test("buildProfileAssistanceRequest pide PLP y PDP cuando el perfilado no los en
   assert.ok(assistance.requestedInputs.some((input) => input.id === "search_url"));
 });
 
+test("buildProfileAssistanceRequest confia en la PLP aportada por el usuario", () => {
+  const assistance = buildProfileAssistanceRequest(
+    {
+      entryUrl: "https://shop.example.com",
+      plpUrl: "https://shop.example.com/category/shoes",
+    },
+    {
+      profile: {
+        platformHint: "sfcc",
+        confidence: 0.72,
+      },
+      samplePages: [
+        {
+          typeRequested: "plp",
+          detectedType: "pdp",
+          source: "input",
+        },
+      ],
+    },
+  );
+
+  assert.equal(assistance.status, "not_needed");
+  assert.equal(assistance.requestedInputs.some((input) => input.id === "plp_url"), false);
+});
+
 test("applyAssistanceInputsToParsed rellena samples y category-url para scrape", () => {
   const next = applyAssistanceInputsToParsed(
     {
@@ -160,6 +186,31 @@ test("applyAssistanceInputsToParsed acumula multiples PLPs para scrape", () => {
   ]);
 });
 
+test("applyAssistanceInputsToParsed conserva PLPs facilitadas durante profile-site", () => {
+  const next = applyAssistanceInputsToParsed(
+    {
+      categoryUrls: [],
+      homeUrl: "",
+      plpUrl: "",
+      searchUrl: "",
+      pdpUrl: "",
+    },
+    {
+      plp_url: [
+        "https://shop.example.com/category/shoes",
+        "https://shop.example.com/category/jackets",
+      ],
+    },
+    "profile-site",
+  );
+
+  assert.equal(next.plpUrl, "https://shop.example.com/category/shoes");
+  assert.deepEqual(next.categoryUrls, [
+    "https://shop.example.com/category/shoes",
+    "https://shop.example.com/category/jackets",
+  ]);
+});
+
 test("hasGuidedSampleUrls detecta urls de apoyo", () => {
   assert.equal(hasGuidedSampleUrls({}), false);
   assert.equal(hasGuidedSampleUrls({ pdpUrl: "https://shop.example.com/p/red-shoe" }), true);
@@ -194,7 +245,7 @@ test("shouldOfferAutoScrapeAfterProfile propone continuar cuando el perfil es co
   }
 });
 
-test("shouldOfferAutoScrapeAfterProfile no propone continuar si el perfil aun necesita ayuda", () => {
+test("shouldOfferAutoScrapeAfterProfile tambien propone continuar si el perfil no es valido", () => {
   const originalStdinTty = process.stdin.isTTY;
   const originalStdoutTty = process.stdout.isTTY;
 
@@ -216,11 +267,37 @@ test("shouldOfferAutoScrapeAfterProfile no propone continuar si el perfil aun ne
       },
     );
 
-    assert.equal(shouldOffer, false);
+    assert.equal(shouldOffer, true);
   } finally {
     process.stdin.isTTY = originalStdinTty;
     process.stdout.isTTY = originalStdoutTty;
   }
+});
+
+test("isProfileValidForAutomaticSelection detecta cuando se puede ir por el branch auto", () => {
+  assert.equal(
+    isProfileValidForAutomaticSelection({
+      profile: {
+        platformHint: "sfcc",
+      },
+      assistance: {
+        status: "not_needed",
+      },
+    }),
+    true,
+  );
+
+  assert.equal(
+    isProfileValidForAutomaticSelection({
+      profile: {
+        platformHint: "generic",
+      },
+      assistance: {
+        status: "not_needed",
+      },
+    }),
+    false,
+  );
 });
 
 test("applyAutoScrapeAnswersToParsed prepara un scrape automatico reutilizando el perfil", () => {
@@ -241,6 +318,7 @@ test("applyAutoScrapeAnswersToParsed prepara un scrape automatico reutilizando e
       entryUrl: "https://shop.example.com",
       maxCategories: 6,
       productsPerCategory: 12,
+      categoryUrls: ["https://shop.example.com/category/jackets"],
     },
   );
 
@@ -249,7 +327,7 @@ test("applyAutoScrapeAnswersToParsed prepara un scrape automatico reutilizando e
   assert.equal(next.maxCategories, 6);
   assert.equal(next.productsPerCategory, 12);
   assert.deepEqual(next.categoryNames, []);
-  assert.deepEqual(next.categoryUrls, []);
+  assert.deepEqual(next.categoryUrls, ["https://shop.example.com/category/jackets"]);
   assert.equal(next.homeUrl, "");
   assert.equal(next.plpUrl, "");
   assert.equal(next.searchUrl, "");

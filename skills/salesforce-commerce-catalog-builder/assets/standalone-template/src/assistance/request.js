@@ -87,12 +87,20 @@ export function buildProfileAssistanceRequest(options, profileResult) {
   const reasons = [];
   const requestedInputs = [];
   const samplePages = profileResult.samplePages || [];
-  const hasPlp = samplePages.some((page) => page.detectedType === "plp");
+  const hasTrustedUserPlp = Boolean(options.plpUrl || options.categoryUrls?.length);
+  const hasPlp = hasTrustedUserPlp || samplePages.some((page) => page.detectedType === "plp");
   const hasPdp = samplePages.some((page) => page.detectedType === "pdp");
 
   if (!hasPlp) {
     reasons.push("No se ha identificado una PLP fiable durante el perfilado.");
-    pushInput(requestedInputs, "plp_url", "PLP URL", true, "Pasa una PLP representativa del catalogo.");
+    pushInput(
+      requestedInputs,
+      "plp_url",
+      "PLP URL",
+      true,
+      "Pasa una o varias PLPs representativas del catalogo.",
+      { multiple: true },
+    );
   }
 
   if (!hasPdp) {

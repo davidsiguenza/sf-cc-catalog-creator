@@ -67,3 +67,30 @@ test("buildSiteProfile propone aprendizaje cuando no hay plataforma conocida", (
   assert.equal(profile.platformHint, "generic");
   assert.ok(profile.learningCandidates.length >= 1);
 });
+
+test("buildSiteProfile no penaliza una PLP aportada por el usuario", () => {
+  const profile = buildSiteProfile({
+    entryUrl: "https://shop.example.com/",
+    samplePages: [
+      {
+        typeRequested: "plp",
+        detectedType: "pdp",
+        source: "input",
+        url: "https://shop.example.com/category/blazers",
+        topProductUrls: [
+          "https://shop.example.com/on/demandware.store/Sites-Shop-Site/es/Product-ShowQuickView?pid=769126050_IVO",
+        ],
+        topCategoryUrls: ["https://shop.example.com/category/blazers"],
+        productCandidateCount: 8,
+        categoryCandidateCount: 2,
+        signals: {
+          hasJsonLdProduct: false,
+          platformTokens: ["demandware"],
+        },
+      },
+    ],
+  });
+
+  assert.equal(profile.platformHint, "sfcc");
+  assert.ok(profile.confidence >= 0.7);
+});

@@ -139,7 +139,7 @@ function calculateProfileConfidence(samplePages, detector, urlPatterns) {
   let score = detector.confidence * 0.6;
 
   const typedSamples = samplePages.filter((page) => page.typeRequested !== "home");
-  const typeMatches = typedSamples.filter((page) => page.detectedType === page.typeRequested).length;
+  const typeMatches = typedSamples.filter((page) => isTrustedTypedSample(page) || page.detectedType === page.typeRequested).length;
   const typeScore = typedSamples.length ? typeMatches / typedSamples.length : 0.5;
   score += typeScore * 0.2;
 
@@ -147,6 +147,10 @@ function calculateProfileConfidence(samplePages, detector, urlPatterns) {
   score += Math.min(0.2, urlSignalCount * 0.05);
 
   return Number(Math.max(0, Math.min(1, score)).toFixed(2));
+}
+
+function isTrustedTypedSample(page) {
+  return page?.source === "input" && page?.typeRequested === "plp";
 }
 
 function buildLearningCandidates(detector, samplePages, urlPatterns) {
