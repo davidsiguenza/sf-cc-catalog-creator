@@ -46,6 +46,46 @@ test("buildScrapeAssistanceRequest no pide ayuda cuando la calidad es suficiente
   assert.equal(assistance.status, "not_needed");
 });
 
+test("buildScrapeAssistanceRequest sugiere otra PLP cuando la muestra cubre una sola categoria", () => {
+  const assistance = buildScrapeAssistanceRequest(
+    {
+      entryUrl: "https://shop.example.com",
+      categoryUrls: ["https://shop.example.com/category/shoes"],
+    },
+    {
+      summary: {
+        categoriesProcessed: 1,
+        productsExtracted: 6,
+      },
+      products: [
+        {
+          categoryPath: "Men > Shoes",
+          allCategoryPaths: ["Men > Shoes"],
+        },
+        {
+          categoryPath: "Men > Shoes",
+          allCategoryPaths: ["Men > Shoes"],
+        },
+      ],
+      validation: {
+        summary: {
+          priceCoverage: 1,
+          imageCoverage: 1,
+          categoryCoverage: 1,
+        },
+      },
+    },
+  );
+
+  assert.equal(assistance.status, "needs_user_input");
+  assert.equal(assistance.severity, "advisory");
+  assert.ok(assistance.requestedInputs.some((input) => input.id === "additional_plp_url"));
+  assert.match(assistance.message, /pocas categorias/i);
+  assert.match(assistance.suggestedCommand, /npm start -- scrape/);
+  assert.match(assistance.suggestedCommand, /--category-url https:\/\/shop\.example\.com\/category\/shoes/);
+  assert.match(assistance.suggestedCommand, /--category-url <OTRA_PLP_URL>/);
+});
+
 test("buildProfileAssistanceRequest pide PLP y PDP cuando el perfilado no los encuentra", () => {
   const assistance = buildProfileAssistanceRequest(
     { entryUrl: "https://shop.example.com" },
@@ -87,6 +127,32 @@ test("applyAssistanceInputsToParsed rellena samples y category-url para scrape",
   assert.equal(next.plpUrl, "https://shop.example.com/category/shoes");
   assert.equal(next.pdpUrl, "https://shop.example.com/p/red-shoe");
   assert.deepEqual(next.categoryUrls, ["https://shop.example.com/category/shoes"]);
+});
+
+test("applyAssistanceInputsToParsed acumula multiples PLPs para scrape", () => {
+  const next = applyAssistanceInputsToParsed(
+    {
+      categoryUrls: ["https://shop.example.com/category/shoes"],
+      homeUrl: "",
+      plpUrl: "https://shop.example.com/category/shoes",
+      searchUrl: "",
+      pdpUrl: "",
+    },
+    {
+      additional_plp_url: [
+        "https://shop.example.com/category/jackets",
+        "https://shop.example.com/category/accessories",
+      ],
+    },
+    "scrape",
+  );
+
+  assert.equal(next.plpUrl, "https://shop.example.com/category/shoes");
+  assert.deepEqual(next.categoryUrls, [
+    "https://shop.example.com/category/shoes",
+    "https://shop.example.com/category/jackets",
+    "https://shop.example.com/category/accessories",
+  ]);
 });
 
 test("hasGuidedSampleUrls detecta urls de apoyo", () => {

@@ -30,27 +30,31 @@ export async function promptForAssistanceInputs(assistance, options) {
 
     for (const input of outstandingInputs) {
       const response = (
-        await rl.question(
-          `${input.label}${input.required ? " (obligatorio)" : " (opcional)"}: `,
-        )
+        await rl.question(buildPromptLabel(input))
       ).trim();
 
       if (!response) {
         continue;
       }
 
-      if (!isHttpUrl(response)) {
+      const values = parseHttpUrlValues(response);
+
+      if (!values.length) {
         console.log(`- Valor ignorado para ${input.label}: no parece una URL http/https valida.`);
         continue;
       }
 
-      answers[input.id] = response;
+      answers[input.id] = input.multiple ? values : values[0];
     }
 
-    const missingRequired = outstandingInputs.filter((input) => input.required && !answers[input.id]);
+    const missingRequired = outstandingInputs.filter((input) => input.required && !hasProvidedValue(answers[input.id]));
 
     if (missingRequired.length) {
       console.log("- No se aportaron todas las URLs obligatorias; no se reintentara automaticamente.");
+      return null;
+    }
+
+    if (!Object.keys(answers).length) {
       return null;
     }
 
@@ -69,24 +73,35 @@ export function applyAssistanceInputsToParsed(parsed, answers, command) {
     ...parsed,
   };
 
-  if (answers.home_url) {
-    next.homeUrl = answers.home_url;
+  const homeUrls = normalizeAnsweredUrls(answers.home_url);
+  const primaryPlpUrls = normalizeAnsweredUrls(answers.plp_url);
+  const additionalPlpUrls = normalizeAnsweredUrls(answers.additional_plp_url);
+  const searchUrls = normalizeAnsweredUrls(answers.search_url);
+  const pdpUrls = normalizeAnsweredUrls(answers.pdp_url);
+  const assistedPlpUrls = dedupeUrls([...primaryPlpUrls, ...additionalPlpUrls]);
+
+  if (homeUrls[0]) {
+    next.homeUrl = homeUrls[0];
   }
 
-  if (answers.plp_url) {
-    next.plpUrl = answers.plp_url;
-
-    if (command === "scrape" && !next.categoryUrls.length) {
-      next.categoryUrls = [answers.plp_url];
-    }
+  if (primaryPlpUrls[0]) {
+    next.plpUrl = primaryPlpUrls[0];
   }
 
-  if (answers.search_url) {
-    next.searchUrl = answers.search_url;
+  if (!next.plpUrl && additionalPlpUrls[0]) {
+    next.plpUrl = additionalPlpUrls[0];
   }
 
-  if (answers.pdp_url) {
-    next.pdpUrl = answers.pdp_url;
+  if (command === "scrape" && assistedPlpUrls.length) {
+    next.categoryUrls = dedupeUrls([...(next.categoryUrls || []), ...assistedPlpUrls]);
+  }
+
+  if (searchUrls[0]) {
+    next.searchUrl = searchUrls[0];
+  }
+
+  if (pdpUrls[0]) {
+    next.pdpUrl = pdpUrls[0];
   }
 
   return next;
@@ -114,6 +129,8 @@ function getExistingValue(options, id) {
       return options.homeUrl || options.entryUrl;
     case "plp_url":
       return options.plpUrl || options.categoryUrls?.[0] || "";
+    case "additional_plp_url":
+      return "";
     case "search_url":
       return options.searchUrl || "";
     case "pdp_url":
@@ -125,6 +142,39 @@ function getExistingValue(options, id) {
 
 function normalizeYesNo(value) {
   return ["y", "yes", "s", "si"].includes(String(value || "").trim().toLowerCase());
+}
+
+function buildPromptLabel(input) {
+  const suffix = input.multiple ? " (puedes pegar varias separadas por comas o saltos de linea)" : "";
+  return `${input.label}${input.required ? " (obligatorio)" : " (opcional)"}${suffix}: `;
+}
+
+function parseHttpUrlValues(value) {
+  return String(value || "")
+    .split(/[\n,]+/)
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .filter((entry) => isHttpUrl(entry));
+}
+
+function hasProvidedValue(value) {
+  if (Array.isArray(value)) {
+    return value.length > 0;
+  }
+
+  return Boolean(value);
+}
+
+function normalizeAnsweredUrls(value) {
+  if (Array.isArray(value)) {
+    return dedupeUrls(value.map((entry) => String(entry || "").trim()).filter(Boolean));
+  }
+
+  return dedupeUrls([String(value || "").trim()].filter(Boolean));
+}
+
+function dedupeUrls(values) {
+  return Array.from(new Set(values.filter(Boolean)));
 }
 
 function isHttpUrl(value) {

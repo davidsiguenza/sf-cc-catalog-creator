@@ -270,6 +270,8 @@ npm start -- profile-site --url https://example.com
 
 If the system cannot find enough context and you are in an interactive terminal, it can ask for `PLP URL`, `PDP URL`, or `Search URL` and retry automatically.
 
+In `scrape`, when it asks for a `PLP URL`, you can now provide one or several PLPs. If the extraction works but still covers too few categories, the assistant can ask for an extra PLP and retry with all of them combined.
+
 ### 2. Run the scrape
 
 Automatic mode:
@@ -356,6 +358,7 @@ Examples:
 - if it cannot find PLPs, it asks for a `PLP URL`
 - if it finds a PLP but not a reliable PDP, it asks for a `PDP URL`
 - if the profile is still ambiguous, it may optionally ask for a `Search URL`
+- if the scrape only covers one category after using a PLP, it can ask for another `PLP URL` to broaden the catalog
 
 If you run the CLI in an interactive terminal, the command can ask for those URLs and retry automatically.
 
