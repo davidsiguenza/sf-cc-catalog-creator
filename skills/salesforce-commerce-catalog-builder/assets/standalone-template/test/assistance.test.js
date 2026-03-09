@@ -2,10 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  applyAdditionalCategoriesToParsed,
   applyAutoScrapeAnswersToParsed,
   applyAssistanceInputsToParsed,
   hasGuidedSampleUrls,
   isProfileValidForAutomaticSelection,
+  shouldPromptForAdditionalCategoriesAfterScrape,
   shouldOfferAutoScrapeAfterProfile,
 } from "../src/assistance/interactive.js";
 import { buildProfileAssistanceRequest, buildScrapeAssistanceRequest } from "../src/assistance/request.js";
@@ -332,4 +334,76 @@ test("applyAutoScrapeAnswersToParsed prepara un scrape automatico reutilizando e
   assert.equal(next.plpUrl, "");
   assert.equal(next.searchUrl, "");
   assert.equal(next.pdpUrl, "");
+});
+
+test("applyAdditionalCategoriesToParsed prepara una nueva pasada solo con las categorias añadidas", () => {
+  const next = applyAdditionalCategoriesToParsed(
+    {
+      command: "scrape",
+      categoryNames: ["Men"],
+      categoryUrls: ["https://shop.example.com/category/shoes"],
+      homeUrl: "https://shop.example.com",
+      plpUrl: "https://shop.example.com/category/shoes",
+      searchUrl: "https://shop.example.com/search?q=shirt",
+      pdpUrl: "https://shop.example.com/p/red-shirt",
+    },
+    {
+      categoryUrls: [
+        "https://shop.example.com/category/jackets",
+        "https://shop.example.com/category/accessories",
+      ],
+    },
+  );
+
+  assert.equal(next.command, "scrape");
+  assert.deepEqual(next.categoryNames, []);
+  assert.deepEqual(next.categoryUrls, [
+    "https://shop.example.com/category/jackets",
+    "https://shop.example.com/category/accessories",
+  ]);
+  assert.equal(next.homeUrl, "");
+  assert.equal(next.plpUrl, "");
+  assert.equal(next.searchUrl, "");
+  assert.equal(next.pdpUrl, "");
+});
+
+test("shouldPromptForAdditionalCategoriesAfterScrape solo pregunta si hay categorias procesadas y tty", () => {
+  const originalStdinTty = process.stdin.isTTY;
+  const originalStdoutTty = process.stdout.isTTY;
+
+  process.stdin.isTTY = true;
+  process.stdout.isTTY = true;
+
+  try {
+    assert.equal(
+      shouldPromptForAdditionalCategoriesAfterScrape(
+        {
+          summary: {
+            categoriesProcessed: 2,
+          },
+        },
+        {
+          interactiveAssistance: true,
+        },
+      ),
+      true,
+    );
+
+    assert.equal(
+      shouldPromptForAdditionalCategoriesAfterScrape(
+        {
+          summary: {
+            categoriesProcessed: 0,
+          },
+        },
+        {
+          interactiveAssistance: true,
+        },
+      ),
+      false,
+    );
+  } finally {
+    process.stdin.isTTY = originalStdinTty;
+    process.stdout.isTTY = originalStdoutTty;
+  }
 });

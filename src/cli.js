@@ -2,9 +2,11 @@ import path from "node:path";
 
 import { buildProfileAssistanceRequest, buildScrapeAssistanceRequest } from "./assistance/request.js";
 import {
+  applyAdditionalCategoriesToParsed,
   applyAutoScrapeAnswersToParsed,
   applyAssistanceInputsToParsed,
   hasGuidedSampleUrls,
+  promptForAdditionalCategoriesAfterScrape,
   promptForAutoScrapeAfterProfile,
   promptForAssistanceInputs,
 } from "./assistance/interactive.js";
@@ -12,7 +14,8 @@ import { loadSiteConfig, mergeOptionsWithConfig } from "./config.js";
 import { profileSite } from "./profiler.js";
 import { loadSiteProfile } from "./site-profiles/loader.js";
 import { ensureDir, writeJsonFile } from "./utils/fs.js";
-import { getDomainSlug } from "./utils/url.js";
+import { mergeScrapeResults } from "./utils/scrape-results.js";
+import { cleanUrl, getDomainSlug } from "./utils/url.js";
 
 const DEFAULTS = {
   headless: true,
@@ -55,9 +58,12 @@ export async function runCli(argv) {
 
 async function runScrapeCommand(parsed) {
   let workingParsed = { ...parsed };
-  let attempt = 0;
+  let assistanceAttempt = 0;
+  let aggregateResult = null;
+  let requestedCategoryNames = dedupeValues(parsed.categoryNames || []);
+  let requestedCategoryUrls = dedupeValues((parsed.categoryUrls || []).map(normalizeCategoryUrl));
 
-  while (attempt < 3) {
+  while (true) {
     const explicitConfig = await loadSiteConfig(workingParsed.configPath);
     const initialSiteProfile = workingParsed.entryUrl
       ? await loadSiteProfile(workingParsed.entryUrl, workingParsed.profilesDir)
@@ -95,31 +101,39 @@ async function runScrapeCommand(parsed) {
     }
 
     const scrapeResult = await scrapeCatalog(options);
-    const assistance = buildScrapeAssistanceRequest(options, scrapeResult);
+    const hasPreviousAggregate = Boolean(aggregateResult);
+    aggregateResult = mergeScrapeResults(aggregateResult, scrapeResult);
+    requestedCategoryNames = dedupeValues([...requestedCategoryNames, ...(options.categoryNames || [])]);
+    requestedCategoryUrls = dedupeValues([...requestedCategoryUrls, ...(options.categoryUrls || []).map(normalizeCategoryUrl)]);
+    const assistance = buildScrapeAssistanceRequest(options, aggregateResult);
 
     await ensureDir(outputDir);
-    const exportedFiles = await exportAll(scrapeResult, options, outputDir);
+    const exportedFiles = await exportAll(aggregateResult, options, outputDir);
     const summaryPath = path.join(outputDir, "run-summary.json");
 
     await writeJsonFile(summaryPath, {
       scrapedAt: new Date().toISOString(),
       entryUrl: options.entryUrl,
-      requestedCategories: options.categoryNames,
-      requestedCategoryUrls: options.categoryUrls,
-      totals: scrapeResult.summary,
-      validation: scrapeResult.validation,
+      requestedCategories: requestedCategoryNames,
+      requestedCategoryUrls: requestedCategoryUrls,
+      totals: aggregateResult.summary,
+      validation: aggregateResult.validation,
       assistance,
       exportedFiles,
-      warnings: scrapeResult.warnings,
-      categories: scrapeResult.categories,
+      warnings: aggregateResult.warnings,
+      categories: aggregateResult.categories,
     });
 
     console.log("\nResumen");
-    console.log(`- Categorias procesadas: ${scrapeResult.summary.categoriesProcessed}`);
-    console.log(`- Productos unicos: ${scrapeResult.summary.productsExtracted}`);
-    console.log(`- Productos validos: ${scrapeResult.summary.productsValid}`);
-    console.log(`- Advertencias: ${scrapeResult.warnings.length}`);
-    console.log(`- Errores de validacion: ${scrapeResult.summary.validationErrors}`);
+    if (hasPreviousAggregate) {
+      console.log(`- Categorias procesadas en esta pasada: ${scrapeResult.summary.categoriesProcessed}`);
+      console.log(`- Productos unicos en esta pasada: ${scrapeResult.summary.productsExtracted}`);
+    }
+    console.log(`- Categorias procesadas: ${aggregateResult.summary.categoriesProcessed}`);
+    console.log(`- Productos unicos: ${aggregateResult.summary.productsExtracted}`);
+    console.log(`- Productos validos: ${aggregateResult.summary.productsValid}`);
+    console.log(`- Advertencias: ${aggregateResult.warnings.length}`);
+    console.log(`- Errores de validacion: ${aggregateResult.summary.validationErrors}`);
     console.log(`- Summary: ${summaryPath}`);
 
     for (const file of exportedFiles) {
@@ -130,13 +144,30 @@ async function runScrapeCommand(parsed) {
 
     const answers = await promptForAssistanceInputs(assistance, options);
 
-    if (!answers) {
-      return;
+    if (answers) {
+      if (assistanceAttempt >= 2) {
+        break;
+      }
+
+      workingParsed = applyAssistanceInputsToParsed(workingParsed, answers, "scrape");
+      console.log("\nReintentando scrape con ayuda del usuario...");
+      assistanceAttempt += 1;
+      continue;
     }
 
-    workingParsed = applyAssistanceInputsToParsed(workingParsed, answers, "scrape");
-    console.log("\nReintentando scrape con ayuda del usuario...");
-    attempt += 1;
+    assistanceAttempt = 0;
+
+    const nextCategoryUrls = await promptForNewCategoryBatch(aggregateResult, options);
+
+    if (nextCategoryUrls.length) {
+      workingParsed = applyAdditionalCategoriesToParsed(workingParsed, {
+        categoryUrls: nextCategoryUrls,
+      });
+      console.log("\nLanzando una nueva pasada para las categorias añadidas...");
+      continue;
+    }
+
+    return;
   }
 
   console.log("\nSe alcanzo el maximo de reintentos asistidos para scrape.");
@@ -435,4 +466,42 @@ function mergeKnownConfig(profile, explicit) {
 
 function dropUndefined(input) {
   return Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined));
+}
+
+async function promptForNewCategoryBatch(aggregateResult, options) {
+  while (true) {
+    const additionalCategories = await promptForAdditionalCategoriesAfterScrape(aggregateResult, options);
+
+    if (!additionalCategories) {
+      return [];
+    }
+
+    const nextCategoryUrls = filterUnprocessedCategoryUrls(additionalCategories.categoryUrls, aggregateResult);
+
+    if (nextCategoryUrls.length) {
+      return nextCategoryUrls;
+    }
+
+    console.log("\nTodas esas categorias ya estaban procesadas. Indica otras nuevas o responde no para terminar.");
+  }
+}
+
+function filterUnprocessedCategoryUrls(categoryUrls, aggregateResult) {
+  const processed = new Set(
+    (aggregateResult?.categories || []).map((category) => normalizeCategoryUrl(category.url)).filter(Boolean),
+  );
+
+  return dedupeValues((categoryUrls || []).map(normalizeCategoryUrl)).filter((categoryUrl) => !processed.has(categoryUrl));
+}
+
+function normalizeCategoryUrl(url) {
+  try {
+    return cleanUrl(url);
+  } catch {
+    return String(url || "").trim();
+  }
+}
+
+function dedupeValues(values) {
+  return Array.from(new Set((values || []).filter(Boolean)));
 }

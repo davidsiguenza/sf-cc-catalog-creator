@@ -80,14 +80,14 @@ Important today:
 
 ## Recommended path for demos
 
-If you want the fastest demo path:
+If you want the standard path:
 
 1. clone this repo
 2. enter the repo folder
 3. install dependencies
 4. install Chromium
-5. run `profile-site`
-6. run `scrape`
+5. run `profile-site --url <store>`
+6. follow the interactive flow
 7. review `visual-catalog.html`
 8. import or present the outputs
 
@@ -141,83 +141,6 @@ npm install
 
 Do not run `npm init -y` here, because this repo is already a Node project.
 
-### Common error: `npm install` fails with `ENOENT package.json`
-
-If you see something like:
-
-```text
-npm error enoent Could not read package.json
-```
-
-it means one of these two things:
-
-1. you are not inside the cloned repo
-2. you are in an empty folder that is not yet a Node project
-
-Example of the wrong situation:
-
-```bash
-cd test-catalog
-npm install
-```
-
-That fails if `test-catalog/` does not contain `package.json`.
-
-The fix depends on what you actually want to do.
-
-Case A: you want to use this repo
-
-```bash
-git clone https://github.com/davidsiguenza/sf-cc-catalog-creator.git
-cd sf-cc-catalog-creator
-npm install
-npx playwright install chromium
-```
-
-Case B: you want to create a brand-new Node project manually
-
-```bash
-mkdir test-catalog
-cd test-catalog
-npm init -y
-```
-
-But note: after `npm init -y`, your project is still empty. It does not yet contain `playwright` or this scraper.
-
-If you run:
-
-```bash
-npm install
-```
-
-with no dependencies declared, npm will not install anything useful for this use case.
-
-### Common error: `npx playwright install chromium` warns that dependencies are missing
-
-If Playwright warns that you should install project dependencies first, that means:
-
-- your `package.json` exists
-- but the project does not have `playwright` installed
-
-That is exactly what happens if you run `npm init -y` in an empty folder and then run `npm install` without adding any dependencies.
-
-If you are building a project manually from scratch, the minimum order is:
-
-```bash
-npm init -y
-npm install playwright
-npx playwright install chromium
-```
-
-If you want to use this scraper, do not take that path. Use this instead:
-
-```bash
-git clone https://github.com/davidsiguenza/sf-cc-catalog-creator.git
-cd sf-cc-catalog-creator
-npm install
-npx playwright install chromium
-```
-
 ### 4. Install Chromium for Playwright
 
 From the repo root, run:
@@ -234,85 +157,34 @@ To confirm the project is ready:
 npm start -- help
 ```
 
-## Recommended workflow
+## Workflow
 
-### 1. Profile a new site
-
-If the site is new or likely does not fit generic heuristics well, start here:
+Start here:
 
 ```bash
 npm start -- profile-site \
-  --url https://example.com \
-  --home-url https://example.com \
-  --plp-url https://example.com/category/shoes \
-  --pdp-url https://example.com/p/red-shoe
+  --url https://example.com
 ```
 
-`profile-site`:
+That is now the main flow.
 
-- detects the platform when possible
-- learns category and product patterns
-- generates `profiles/<domain>.json`
-- writes a summary to `output/<domain>/profile-summary.json`
+What happens next:
 
-The helper URLs are optional, but very useful:
+- `profile-site` profiles the storefront, detects the platform when possible, and writes `profiles/<domain>.json`
+- if context is missing, it can ask for helper samples such as `PLP URL`, `PDP URL`, or `Search URL`
+- if the profile is valid, it can continue directly into `scrape`
+- during that handoff, you can choose automatic category selection or provide a concrete list of PLPs
+- then it asks how many categories and how many products per category to extract
+- after each `scrape`, it can ask whether you want to add more categories without starting over
+
+Optional helper URLs for `profile-site`:
 
 - `--home-url`
 - `--plp-url`
 - `--search-url`
 - `--pdp-url`
 
-For `profile-site`, each of those flags accepts a single sample URL. If you need to broaden the catalog with several PLPs, that happens later in the assisted `scrape` flow, not by passing multiple `--plp-url` values in the same command.
-
-If you do not know those URLs yet, you can start with:
-
-```bash
-npm start -- profile-site --url https://example.com
-```
-
-If the system cannot find enough context and you are in an interactive terminal, it can ask for `PLP URL`, `PDP URL`, or `Search URL` and retry automatically.
-
-In `scrape`, when it asks for a `PLP URL`, you can now provide one or several PLPs. If the extraction works but still covers too few categories, the assistant can ask for an extra PLP and retry with all of them combined.
-
-If `profile-site` finishes with a known platform and enough confidence to continue, the CLI can also offer to launch `scrape` immediately. It reuses the profiled store URL, asks you to confirm it, asks how many categories and products per category you want, and then runs the automatic scrape for you.
-
-When the user explicitly provides a PLP to `profile-site`, the flow now treats that input as trusted. It should not keep questioning whether that page is a PLP, and the follow-up prompt can branch into:
-
-- automatic category selection: ask how many categories and products per category to extract
-- concrete category selection: ask for a comma-separated list of PLPs and then products per category
-- fallback from an invalid profile: ask for a comma-separated list of PLPs and continue from there
-
-### 2. Run the scrape
-
-Automatic mode:
-
-```bash
-npm start -- scrape \
-  --url https://example.com \
-  --max-categories 4 \
-  --products-per-category 8 \
-  --formats generic,b2c,b2b
-```
-
-Single category mode:
-
-```bash
-npm start -- scrape \
-  --url https://example.com \
-  --category-url https://example.com/category/shoes \
-  --products-per-category 12 \
-  --formats generic,b2c,b2b
-```
-
-JSON config mode:
-
-```bash
-npm start -- scrape \
-  --config ./site-config.example.json \
-  --formats generic,b2c,b2b
-```
-
-### 3. Review the result
+For `profile-site`, each of those flags accepts a single sample URL. If you need to broaden the catalog with several PLPs, that now happens later in the assisted flow.
 
 Main output files:
 
@@ -321,31 +193,6 @@ Main output files:
 - `output/<domain>/run-summary.json`
 - `output/<domain>/salesforce-b2c/*`
 - `output/<domain>/salesforce-b2b/*`
-
-### 4. Literal end-to-end demo flow
-
-If you want the most literal flow possible, with no hidden assumptions, use this:
-
-```bash
-git clone https://github.com/davidsiguenza/sf-cc-catalog-creator.git
-cd sf-cc-catalog-creator
-node -v
-npm -v
-npm install
-npx playwright install chromium
-npm start -- profile-site --url https://example.com
-npm start -- scrape --url https://example.com --formats generic,b2c,b2b
-```
-
-Then review:
-
-```bash
-open output/example-com/visual-catalog.html
-```
-
-If you do not want to use `open`, manually open:
-
-- `output/example-com/visual-catalog.html`
 
 ## How the system works
 

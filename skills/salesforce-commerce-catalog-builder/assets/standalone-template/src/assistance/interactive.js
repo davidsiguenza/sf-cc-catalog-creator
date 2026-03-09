@@ -195,6 +195,51 @@ export function applyAutoScrapeAnswersToParsed(parsed, answers) {
   };
 }
 
+export async function promptForAdditionalCategoriesAfterScrape(scrapeResult, options) {
+  if (!shouldPromptForAdditionalCategoriesAfterScrape(scrapeResult, options)) {
+    return null;
+  }
+
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  try {
+    const confirmation = normalizeYesNo(
+      await rl.question("\nQuieres añadir alguna nueva categoria? [y/N]: "),
+    );
+
+    if (!confirmation) {
+      return null;
+    }
+
+    const categoryUrls = await promptUrlListWithDefault(rl, "Dame un listado de PLPs separadas por comas");
+    return {
+      categoryUrls,
+    };
+  } finally {
+    rl.close();
+  }
+}
+
+export function applyAdditionalCategoriesToParsed(parsed, answers) {
+  if (!answers?.categoryUrls?.length) {
+    return parsed;
+  }
+
+  return {
+    ...parsed,
+    command: "scrape",
+    categoryNames: [],
+    categoryUrls: answers.categoryUrls,
+    homeUrl: "",
+    plpUrl: "",
+    searchUrl: "",
+    pdpUrl: "",
+  };
+}
+
 export function shouldOfferAutoScrapeAfterProfile(result, options) {
   if (!result?.profile) {
     return false;
@@ -213,6 +258,18 @@ export function isProfileValidForAutomaticSelection(result) {
   }
 
   return result.assistance?.status !== "needs_user_input";
+}
+
+export function shouldPromptForAdditionalCategoriesAfterScrape(scrapeResult, options) {
+  if (options.interactiveAssistance === false) {
+    return false;
+  }
+
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    return false;
+  }
+
+  return Boolean(scrapeResult?.summary?.categoriesProcessed);
 }
 
 function shouldPromptForAssistance(assistance, options) {
