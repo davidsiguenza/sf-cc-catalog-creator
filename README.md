@@ -9,6 +9,20 @@ Motor para explorar una tienda ecommerce, detectar catalogo, extraer productos y
 
 La idea es ahorrar tiempo en demos: intentar `100% auto` primero y pedir ayuda minima al usuario solo cuando haga falta.
 
+## Principio de uso: Never Assume
+
+Este proyecto debe documentarse y usarse con una regla simple:
+
+- no asumir que el usuario ya clono el repo
+- no asumir que el usuario ya esta dentro de la carpeta correcta
+- no asumir que `Node.js` ya esta instalado
+- no asumir que `npm install` ya se ejecuto
+- no asumir que Playwright ya tiene Chromium instalado
+- no asumir que el sitio target tiene una PLP o una PDP facil de descubrir
+- no asumir que el usuario sabe si debe usar el repo runnable o el skill
+
+Por eso, abajo veras siempre pasos completos y comandos literales.
+
 ## Lo importante: hay 2 piezas distintas
 
 ### 1. Este repo
@@ -54,10 +68,13 @@ Importante hoy:
 Para demos con poco tiempo:
 
 1. clona este repo
-2. ejecuta `profile-site`
-3. ejecuta `scrape`
-4. revisa `visual-catalog.html`
-5. importa o enseña los outputs
+2. entra en la carpeta del repo
+3. instala dependencias
+4. instala Chromium
+5. ejecuta `profile-site`
+6. ejecuta `scrape`
+7. revisa `visual-catalog.html`
+8. importa o enseña los outputs
 
 El skill lo reservaria para estos casos:
 
@@ -67,19 +84,50 @@ El skill lo reservaria para estos casos:
 
 ## Instalacion local del repo
 
-Requisitos:
+### 1. Clonar el repo
+
+Si todavia no tienes este proyecto en local, ejecuta exactamente esto:
+
+```bash
+git clone https://github.com/davidsiguenza/sf-cc-catalog-creator.git
+cd sf-cc-catalog-creator
+```
+
+### 2. Comprobar prerequisitos
+
+Antes de seguir, comprueba que tienes `Node.js` y `npm`:
+
+```bash
+node -v
+npm -v
+```
+
+Requisitos minimos:
 
 - Node.js `>= 20`
 - Chromium de Playwright
 
-Instalacion:
+Si `node -v` o `npm -v` fallan, primero instala Node.js y vuelve a este paso.
+
+### 3. Instalar dependencias del proyecto
+
+Desde la raiz del repo, ejecuta:
 
 ```bash
 npm install
+```
+
+### 4. Instalar Chromium para Playwright
+
+Desde la raiz del repo, ejecuta:
+
+```bash
 npx playwright install chromium
 ```
 
-Ayuda del CLI:
+### 5. Ver ayuda del CLI
+
+Para comprobar que el proyecto esta listo:
 
 ```bash
 npm start -- help
@@ -112,6 +160,14 @@ Las URLs auxiliares son opcionales, pero muy utiles:
 - `--plp-url`
 - `--search-url`
 - `--pdp-url`
+
+Si no sabes aun esas URLs, puedes empezar solo con:
+
+```bash
+npm start -- profile-site --url https://example.com
+```
+
+Si el sistema no encuentra suficiente contexto y estas en una terminal interactiva, te pedira `PLP URL`, `PDP URL` o `Search URL` y reintentara.
 
 ### 2. Ejecutar el scrape
 
@@ -152,6 +208,31 @@ Archivos principales:
 - `output/<domain>/run-summary.json`
 - `output/<domain>/salesforce-b2c/*`
 - `output/<domain>/salesforce-b2b/*`
+
+### 4. Flujo literal de demo de extremo a extremo
+
+Si quieres el flujo mas literal posible, sin asumir nada, seria este:
+
+```bash
+git clone https://github.com/davidsiguenza/sf-cc-catalog-creator.git
+cd sf-cc-catalog-creator
+node -v
+npm -v
+npm install
+npx playwright install chromium
+npm start -- profile-site --url https://example.com
+npm start -- scrape --url https://example.com --formats generic,b2c,b2b
+```
+
+Despues revisas:
+
+```bash
+open output/example-com/visual-catalog.html
+```
+
+Si no quieres usar `open`, abre manualmente:
+
+- `output/example-com/visual-catalog.html`
 
 ## Como funciona el sistema
 
@@ -227,15 +308,43 @@ El agente puede usar:
 - los perfiles guardados
 - la seccion `assistance` para saber que pedirte
 
+No asumas que el agente sabe si prefieres CLI o flujo asistido. Si quieres una de las dos cosas, dilo de forma explicita.
+
+Prompt ejemplo para CLI:
+
+```text
+Usa el CLI de este repo. Primero ejecuta profile-site para https://example.com. Si falta contexto, pídeme una PLP y una PDP. Luego ejecuta scrape y valida el resultado.
+```
+
+Prompt ejemplo para trabajo totalmente asistido:
+
+```text
+Quiero una demo real con esta web. Haz todo el flujo de profile-site y scrape, y si te faltan PLPs o PDPs pídemelas antes de continuar.
+```
+
 ## Usar el skill en otro workspace
 
 Si quieres distribuir esta capacidad a otros equipos o llevarla a otro repo, entonces usas el skill.
 
-Instalacion del skill en Cursor/Codex, segun el flujo que ya estabas usando:
+### 1. Instalar el skill
+
+No asumas que el skill ya esta instalado.
+
+Desde cualquier terminal con acceso a `npx`, ejecuta:
 
 ```bash
 npx skills add https://github.com/davidsiguenza/sf-cc-catalog-creator.git --skill salesforce-commerce-catalog-builder
 ```
+
+### 2. Reiniciar Cursor/Codex si hace falta
+
+Si el skill no aparece en la UI o no responde al invocarlo, reinicia la aplicacion y vuelve a abrir el workspace.
+
+### 3. Abrir un workspace vacio o un repo destino
+
+No asumas que el skill crea cosas fuera del workspace actual. Abre primero la carpeta donde quieres que el agente trabaje.
+
+### 4. Pedir explicitamente el flujo que quieres
 
 Luego, en un workspace vacio o en un repo destino, puedes pedir algo como:
 
@@ -247,6 +356,7 @@ Punto importante:
 
 - el skill no sustituye este repo
 - el skill ayuda a recrear o adaptar este repo
+- si solo quieres ejecutar el scraper ya existente, no uses el skill: clona este repo y usa el CLI
 
 ## Que outputs genera
 
@@ -329,6 +439,21 @@ Si una tienda concreta falla:
 3. revisa `assistance`
 4. aporta `PLP/PDP/Search URL` si hace falta
 5. relanza `scrape`
+
+## Checklist minima para una persona de demo
+
+Si alguien tiene que usar esto sin contexto previo, esta es la lista minima:
+
+1. Ejecuta `git clone https://github.com/davidsiguenza/sf-cc-catalog-creator.git`
+2. Ejecuta `cd sf-cc-catalog-creator`
+3. Ejecuta `node -v` y confirma `>= 20`
+4. Ejecuta `npm install`
+5. Ejecuta `npx playwright install chromium`
+6. Ejecuta `npm start -- profile-site --url <HOME>`
+7. Si el sistema lo pide, aporta `PLP URL` y `PDP URL`
+8. Ejecuta `npm start -- scrape --url <HOME> --formats generic,b2c,b2b`
+9. Revisa `output/<domain>/visual-catalog.html`
+10. Usa `run-summary.json` para confirmar que los productos son válidos
 
 ## Decision final
 
