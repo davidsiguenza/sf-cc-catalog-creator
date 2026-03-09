@@ -1,0 +1,90 @@
+{
+  "name": "nnormal-es",
+  "entryUrl": "https://www.nnormal.com/es_ES",
+  "currency": "EUR",
+  "lang": "x-default",
+  "maxSubcategoriesPerCategory": 0,
+  "productsPerCategory": 10,
+  "categoryUrls": [
+    "https://www.nnormal.com/es_ES/hombre/zapatos",
+    "https://www.nnormal.com/es_ES/hombre/ropa",
+    "https://www.nnormal.com/es_ES/mujer/zapatos",
+    "https://www.nnormal.com/es_ES/mujer/ropa",
+    "https://www.nnormal.com/es_ES/hombre/ropa/camisetas",
+    "https://www.nnormal.com/es_ES/mujer/ropa/camisetas"
+  ],
+  "categoryDiscovery": {
+    "selectors": [
+      "header a[href*='/es_ES/']",
+      "a[href^='/es_ES/hombre/']",
+      "a[href^='/es_ES/mujer/']",
+      "a[href*='/bags-accessories']",
+      "a[href*='/ropa']",
+      "a[href*='/zapatos']"
+    ],
+    "includePatterns": [
+      "/hombre/",
+      "/mujer/",
+      "/ropa",
+      "/zapatos",
+      "/bags-accessories",
+      "/camisetas",
+      "/chaquetas",
+      "/pantalones",
+      "/calcetines",
+      "/gorras",
+      "/race-gear",
+      "/warm",
+      "-family"
+    ],
+    "excludePatterns": [
+      "/content/",
+      "/customer_service",
+      "/contacto",
+      "/shops",
+      "/legal/",
+      "/search",
+      "/producto?option="
+    ]
+  },
+  "productDiscovery": {
+    "selectors": [
+      "a[href*='/es_ES/producto?option=']",
+      "a[href*='/producto?option=']",
+      "a[href*='option=']",
+      "a[href*='/nnormal-']"
+    ]
+  },
+  "pagination": {
+    "selectors": [
+      ".ProductList_paginatorDiv__AQj2O a[href]",
+      "a[rel='next']"
+    ]
+  },
+  "productExtraction": {
+    "name": [
+      "h1",
+      "meta[property='og:title']@content"
+    ],
+    "description": [
+      "meta[property='og:description']@content",
+      "meta[name='description']@content"
+    ],
+    "sku": [
+      "meta[property='og:url']@content",
+      "[itemprop='sku']",
+      ".sku"
+    ],
+    "price": [
+      "meta[property='og:price:amount']@content",
+      "meta[name='og:product:price:amount']@content",
+      "p[data-ge-price]",
+      ".style_price__s9ZN1"
+    ],
+    "images": [
+      "meta[property='og:image']@content",
+      ".ProductSheet_imagesRow__r_C18 img@src",
+      "img@src"
+    ]
+  }
+}

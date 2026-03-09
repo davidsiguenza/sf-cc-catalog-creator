@@ -23,6 +23,59 @@ npm install
 npx playwright install chromium
 ```
 
+## Antes de nada: que es este skill y que no es
+
+Esto es importante porque aqui estaba la confusion.
+
+Un skill de Cursor no es un programa instalado listo para ejecutar en cualquier carpeta. Un skill es una instruccion reusable para que el agente:
+
+- copie una plantilla ya preparada, o
+- cree/adapte codigo en tu workspace
+
+Por eso:
+
+- si instalas solo el skill, en una carpeta vacia no existe todavia ningun `package.json` ni ningun `npm start`
+- el comando `npm start -- scrape ...` solo funciona despues de tener el proyecto del scraper en esa carpeta
+- si ves muchos cambios en Cursor, es porque el agente esta creando el scraper; no es que el skill por si solo ya lo haya instalado
+
+## Opcion recomendada si quieres usarlo ya desde 0
+
+Si lo que quieres es sacar un catalogo cuanto antes desde una carpeta vacia, no empieces invocando el skill. Lo mas directo es clonar este repo y ejecutar el scraper ya hecho.
+
+### Paso a paso desde una carpeta vacia
+
+```bash
+mkdir test-catalog
+cd test-catalog
+git clone https://github.com/davidsiguenza/sf-cc-catalog-creator.git .
+npm install
+npx playwright install chromium
+```
+
+Si quieres probar una tienda directamente:
+
+```bash
+npm start -- scrape \
+  --url https://www.mybrandmall.com/salesforcestore \
+  --max-categories 4 \
+  --products-per-category 20 \
+  --formats generic,b2c,b2b
+```
+
+Si la tienda necesita selectores mas afinados:
+
+1. duplica `site-config.example.json`
+2. ajusta los selectores
+3. ejecuta:
+
+```bash
+npm start -- scrape \
+  --config ./site-config.mybrand.json \
+  --formats generic,b2c,b2b
+```
+
+Ese es el motivo por el que en tu carpeta vacia te fallaba `npm start`: alli solo tenias el skill instalado en Cursor, pero no este proyecto clonado.
+
 ## Skill reutilizable para Cursor
 
 Este repo ya incluye un skill reusable en:
@@ -71,6 +124,32 @@ Si el repo usa `pnpm` o `yarn`, instala `playwright` con ese gestor y mantén ig
 npx playwright install chromium
 ```
 
+### Como usar el skill bien desde una carpeta vacia
+
+Si quieres usar el skill en vez de clonar este repo, la forma correcta es esta:
+
+1. crea una carpeta vacia
+2. abre esa carpeta en Cursor
+3. instala el skill con `npx skills add`
+4. reinicia Cursor
+5. usa un prompt que le diga explicitamente que cree un proyecto standalone y que lo ejecute de extremo a extremo
+
+Prompt recomendado para carpeta vacia:
+
+```text
+Use $salesforce-commerce-catalog-builder to create a standalone scraper project in this empty workspace using the packaged standalone template, configure it for https://www.mybrandmall.com/salesforcestore, install dependencies, install Chromium, run the scrape, and leave the outputs in output/. If the first extraction is empty, adjust the site config and retry until at least one product is exported or explain the blocker.
+```
+
+### Como usar el skill bien dentro de un repo que ya existe
+
+Si no quieres que toque tu app, díselo de forma explicita. Si no, el agente puede interpretar que debe integrar el scraper en el repo actual.
+
+Prompt recomendado para repo existente:
+
+```text
+Use $salesforce-commerce-catalog-builder to create a standalone scraper in ./catalog-scraper using the packaged standalone template. Do not modify any existing application files outside ./catalog-scraper. Configure it for https://www.mybrandmall.com/salesforcestore, install dependencies, install Chromium, run the scrape, and leave the outputs inside ./catalog-scraper/output/.
+```
+
 ### Que hace el skill
 
 El skill le indica al agente que, cuando tenga que montar este proceso en otro repo, preserve este contrato:
@@ -90,19 +169,15 @@ La idea es que el primer import en B2C salga bien sin tener que retocar XML a ma
 
 ### Flujo recomendado en un proyecto nuevo
 
-1. Instala el skill en Cursor con `npx skills add`.
-2. Reinicia Cursor.
-3. Abre el repo nuevo donde quieras montar el scraper.
-4. Asegura `Node.js`, `playwright` y `Chromium`.
-5. Invoca el skill en el prompt.
-6. Deja que el agente cree o adapte:
-   - la CLI
-   - la configuracion por tienda
-   - los exportadores CSV, HTML, B2C y B2B
-   - las pruebas
-7. Ejecuta una pasada real contra una tienda.
-8. Revisa `visual-catalog.html`.
-9. Importa los XML en B2C Commerce.
+1. Decide si quieres:
+   - clonar este repo y ejecutar el scraper ya hecho
+   - o usar el skill para que Cursor cree un proyecto standalone
+2. Si eliges el skill, dile que use la plantilla empaquetada.
+3. Asegura `Node.js`, `playwright` y `Chromium`.
+4. Exige en el prompt que ejecute el scrape, no solo que cree archivos.
+5. Revisa `visual-catalog.html`.
+6. Si el CSV sale vacio, ajusta `site-config` y vuelve a ejecutar.
+7. Cuando el output sea bueno, importa los XML en B2C Commerce.
 
 ## Uso rapido
 

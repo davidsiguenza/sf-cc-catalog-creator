@@ -1,0 +1,69 @@
+{
+  "name": "sf-store-demo",
+  "entryUrl": "https://example.com",
+  "currency": "USD",
+  "lang": "x-default",
+  "categoryDiscovery": {
+    "selectors": [
+      "header nav a[href]",
+      ".navigation a[href]",
+      ".menu a[href]"
+    ],
+    "includePatterns": [
+      "/c/",
+      "cgid=",
+      "/collections/",
+      "/category/"
+    ],
+    "excludePatterns": [
+      "/cart",
+      "/account",
+      "/login",
+      "/search",
+      "/wishlist",
+      "/checkout"
+    ]
+  },
+  "productDiscovery": {
+    "selectors": [
+      "a[href*='/p/']",
+      "a[href*='/products/']",
+      ".product a[href]",
+      ".product-tile a[href]"
+    ]
+  },
+  "pagination": {
+    "selectors": [
+      "a[rel='next']",
+      ".pagination-next a",
+      ".next a"
+    ]
+  },
+  "productExtraction": {
+    "name": [
+      "h1.product-name",
+      "h1[itemprop='name']",
+      "meta[property='og:title']@content"
+    ],
+    "description": [
+      ".product-description",
+      "[itemprop='description']",
+      "meta[name='description']@content"
+    ],
+    "sku": [
+      ".product-number",
+      "[itemprop='sku']",
+      "[data-product-id]@data-product-id"
+    ],
+    "price": [
+      ".sales .value",
+      ".price-sales",
+      "[itemprop='price']@content"
+    ],
+    "images": [
+      ".primary-images img@src",
+      ".carousel img@src",
+      "meta[property='og:image']@content"
+    ]
+  }
+}
