@@ -38,6 +38,10 @@ export function scoreProductUrl(url) {
     score += 4;
   }
 
+  if (looksLikeSeoProductSlug(url)) {
+    score += 4;
+  }
+
   if (/Product-ShowQuickView/i.test(url)) {
     score -= 3;
   }
@@ -70,6 +74,10 @@ export function scoreCategoryCandidate(link, options) {
     return Number.NEGATIVE_INFINITY;
   }
 
+  if (looksLikeStoreLocatorOrEditorialUrl(link.url)) {
+    return Number.NEGATIVE_INFINITY;
+  }
+
   let score = 0;
 
   if (includePatterns.some((pattern) => link.url.includes(pattern))) {
@@ -97,4 +105,28 @@ export function scoreCategoryCandidate(link, options) {
 
 export function isCategoryCandidate(link, options) {
   return scoreCategoryCandidate(link, options) >= 3;
+}
+
+function looksLikeSeoProductSlug(url) {
+  const pathname = safePathname(url);
+  const lastSegment = pathname.split("/").filter(Boolean).pop() || "";
+
+  if (!lastSegment || lastSegment.includes(".html")) {
+    return false;
+  }
+
+  return /-[a-z0-9]*\d[a-z0-9]*(?:-[a-z0-9]+){1,3}$/i.test(lastSegment);
+}
+
+function looksLikeStoreLocatorOrEditorialUrl(url) {
+  const pathname = safePathname(url);
+  return /(?:^|\/)(?:shops?|stores?)(?:\/|$)|\/content\//i.test(pathname);
+}
+
+function safePathname(url) {
+  try {
+    return new URL(url).pathname;
+  } catch {
+    return String(url || "");
+  }
 }

@@ -10,6 +10,13 @@ test("scoreProductUrl reconoce patrones clasicos y legacy ASPX", () => {
   assert.equal(looksLikeProductUrl("https://shop.example.com/account"), false);
 });
 
+test("scoreProductUrl reconoce slugs SEO con SKU embebido", () => {
+  const seoProductUrl = "https://www.nnormal.com/es_ES/mujer/zapatos/cdi/nnormal-cadi_women_beige-NS4CD1W-001";
+
+  assert.ok(scoreProductUrl(seoProductUrl) >= 3);
+  assert.ok(looksLikeProductUrl(seoProductUrl));
+});
+
 test("scoreProductUrl prioriza PDP SEO de SFCC frente a quick view", () => {
   const seoProductUrl = "https://www.alvaromoreno.com/es_es/americana-domenico-crudo-769126050_IVO.html";
   const quickViewUrl =
@@ -39,6 +46,46 @@ test("scoreCategoryCandidate reconoce categorias legacy y evita textos excluidos
   assert.ok(scoreCategoryCandidate(legacyCategory, options) >= 3);
   assert.equal(isCategoryCandidate(legacyCategory, options), true);
   assert.equal(isCategoryCandidate(excluded, options), false);
+});
+
+test("scoreCategoryCandidate descarta localizador de tiendas y landings editoriales", () => {
+  const options = {
+    categoryDiscovery: {
+      includePatterns: ["/category/"],
+      excludePatterns: ["/account", "/login", "/cart", "/checkout", "/wishlist", "/search", "/blog"],
+    },
+  };
+
+  assert.equal(
+    isCategoryCandidate(
+      {
+        url: "https://www.nnormal.com/es_ES/shops",
+        text: "Tiendas NNormal",
+      },
+      options,
+    ),
+    false,
+  );
+  assert.equal(
+    isCategoryCandidate(
+      {
+        url: "https://www.nnormal.com/es_ES/content/tomir",
+        text: "Tomir",
+      },
+      options,
+    ),
+    false,
+  );
+  assert.equal(
+    isCategoryCandidate(
+      {
+        url: "https://www.nnormal.com/es_ES/mujer/zapatos",
+        text: "Zapatos",
+      },
+      options,
+    ),
+    true,
+  );
 });
 
 test("deriveCategoryPathFromUrl limpia sufijos legacy ASPX", () => {

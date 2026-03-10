@@ -3,6 +3,16 @@ import { isSameDomain } from "../utils/url.js";
 import { dedupeLinks, normalizeLink } from "../discovery/link-utils.js";
 import { scoreProductUrl } from "../discovery/url-scoring.js";
 
+const CONTEXTUAL_PRODUCT_SELECTORS = [
+  "[data-product-id] a[href]",
+  "[class*='productCard'] a[href]",
+  "[class*='product-card'] a[href]",
+  "[class*='productItem'] a[href]",
+  "[class*='product-item'] a[href]",
+  ".product-card a[href]",
+  ".product-item a[href]",
+];
+
 export async function extractProductLinksFromCategory(page, category, options, warnings) {
   const collected = [];
   const visited = new Set();
@@ -25,8 +35,19 @@ export async function extractProductLinksFromCategory(page, category, options, w
         .filter((link) => link.score >= 3)
         .sort((left, right) => right.score - left.score),
     );
+    const contextualLinks = dedupeLinks(
+      (await collectLinks(page, CONTEXTUAL_PRODUCT_SELECTORS))
+        .map((link) => normalizeLink(link, currentUrl))
+        .filter(Boolean)
+        .filter((link) => isSameDomain(link.url, currentUrl))
+        .map((link) => ({ ...link, score: Math.max(scoreProductUrl(link.url), 4) }))
+        .sort((left, right) => right.score - left.score),
+    );
+    const discoveredLinks = dedupeLinks([...pageLinks, ...contextualLinks]).sort(
+      (left, right) => right.score - left.score,
+    );
 
-    for (const link of pageLinks) {
+    for (const link of discoveredLinks) {
       if (!collected.some((entry) => entry.url === link.url)) {
         collected.push(link);
       }
